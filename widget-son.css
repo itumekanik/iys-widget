@@ -1,0 +1,199 @@
+/* Modern and flexible widget CSS */
+
+/* Widget Container */
+#widget-container {
+    width: auto;
+    max-width: 100%;
+    padding: 20px;
+    border-radius: 8px;
+    /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); */
+    /* background-color: #ffffff; */
+    transition: all 0.3s ease-in-out;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header */
+#widget-container h2 {
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    text-align: center;
+    color: #333;
+}
+
+/* Input Groups */
+.input-group {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.input-group label {
+    font-size: 1em;
+    color: #555;
+    cursor: pointer;
+    flex: 1;
+    text-align: center;
+}
+
+.input-group input[type="text"],
+.input-group input[type="email"],
+.input-group input[type="password"] {
+    width: calc(100% - 0px);
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+
+/* Buttons */
+.via-btn {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 4px;
+    background-color: #4DA0DF;
+    color: #fff;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-align: center;
+}
+
+.via-btn:hover {
+    background-color: #469fe2da;
+}
+
+/* Captcha Container */
+#captcha-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    /* justify-content: space-between; */
+    justify-content: flex-start;
+}
+
+#captcha-container img {
+    height: 3em;
+    border: 1px solid #ccc;
+    border-radius: 4px 0 0 4px;
+}
+
+#refresh-captcha {
+    height: 3em;
+    background: #4DA0DF;
+    color: white;
+    border: none;
+    border-radius: 0 4px 4px 0;
+    font-size: 1em;
+    cursor: pointer;
+    padding: 0 10px;
+    margin-left: -1px; /* To remove the gap between image and button */
+}
+
+#refresh-captcha:hover {
+    background-color: #469fe2da;
+}
+
+#captcha-input {
+    flex: 1 1 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+    min-width: 200px;
+}
+
+/* Responsive Captcha Container */
+@media (max-width: 600px) {
+    #captcha-container {
+        /* flex-wrap: nowrap; */
+        justify-content: flex-start;
+        /* flex-direction: column; */
+    }
+
+    #captcha-container img, #refresh-captcha {
+        flex: none;
+        margin-bottom: 10px;
+    }
+
+    #captcha-input {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+/* OTP Section */
+#otp-section {
+    margin-top: 20px;
+}
+
+#otp-section input[type="text"] {
+    width: calc(100% - 0px);
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+
+#otp-timer {
+    margin-top: 10px;
+    font-size: 1em;
+    color: #333;
+    text-align: center;
+}
+
+/* Notification and Message */
+#message {
+    margin-top: 10px;
+    color: #d9534f;
+    text-align: center;
+}
+
+#notification {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #dff0d8;
+    color: #3c763d;
+}
+
+.success-message {
+    color: #3c763d;
+}
+
+.error-message {
+    color: #d9534f;
+}
+
+/* Document Group */
+.document-group p {
+    display: flex;
+}
+
+.document-group p input[type="checkbox"] {
+    align-self: flex-start;
+    margin-top: 6px;
+    margin-right: 5px;
+}
+
+.document-group label {
+    margin: 0;
+}
+
+#start-process {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 20px;
+    display: block;
+}

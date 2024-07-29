@@ -1,0 +1,3629 @@
+window.VK = {};
+const doc = document.documentElement;
+doc.setAttribute("data-useragent", navigator.userAgent);
+
+const body = $("body"),
+  header = $("#header"),
+  anchorMenu = $(".anchor-menu-holder");
+
+const PAGINATION_PAGE = $("#pagination-page");
+const PAGE_COUNT = 9;
+const PAGINATION = $(".pagination");
+const PAGINATION_SELECT = $("#pagination-select");
+const PAGINATION_PREV_BUTTON = $("#pagination-button-prev");
+const PAGINATION_NEXT_BUTTON = $("#pagination-button-next");
+const CATEGORY_SELECT = $("#category-select");
+const YEAR_SELECT = $("#year-select");
+let INPUT_TIMER;
+
+const lazy = $(".lazy");
+$(lazy).attr("src", "assets/img/lazy.svg");
+
+// LAZYLOAD ***********
+VK.lazyLoadImages = function () {
+  var lazyLoadInstance = new LazyLoad();
+};
+VK.lazyLoadImages();
+
+let langId, language;
+
+VK.getBaseAjaxData = function () {
+  return (
+    (langId = UNIGATE.current.langId), (language = UNIGATE.current.language)
+  );
+};
+VK.getBaseAjaxData();
+
+//MODAL
+VK.modalHome = () => {
+  let isvakifKatilimModal = localStorage.getItem("isvakifKatilimModal");
+  if (isvakifKatilimModal == null || isvakifKatilimModal == "false") {
+    MicroModal.show("modal-1");
+    localStorage.setItem("isvakifKatilimModal", "true");
+  }
+};
+if ($("#modal-1").length > 0) {
+  VK.modalHome();
+}
+
+//MODAL ABROAD
+VK.modalAbroad = () => {
+  let isvakifKatilimModalAbroad = localStorage.getItem(
+    "isvakifKatilimModalAbroad"
+  );
+  if ($("#modal-abroad").length > 0 && isvakifKatilimModalAbroad == null) {
+    const modalAbroadApiUrl = CONFIG.modalAbroad.abroad.url;
+    const modalAbroadApiMethod = CONFIG.modalAbroad.abroad.method;
+    $.ajax({
+      url: `${modalAbroadApiUrl}?langId=${langId}&language=${language}`,
+      type: modalAbroadApiMethod,
+      success: function (result) {
+        let modalAbroadBox = $("#modal-abroad .modal__container");
+        //popupTitle
+        if (result.popupTitle != null) {
+          let modalAbroadPopupTitle = `<h2>${result.popupTitle}</h2>`;
+          modalAbroadBox.append(modalAbroadPopupTitle);
+        }
+        //content
+        if (result.content !== null) {
+          let modalAbroadContent = `${result.content}`;
+          modalAbroadBox.append(modalAbroadContent);
+        }
+        //image
+        if (result.image != null) {
+          let modalAbroadImage = ` <img class="responsive-image" src="${result.image}" alt="${result.popupTitle}">`;
+          modalAbroadBox.append(modalAbroadImage);
+        }
+        //videoEmbed
+        if (result.videoEmbed != null) {
+          let modalAbroadVideoEmbed = `<div class="embed-responsive embed-responsive-16by9"> <iframe class="embed-responsive-item" src="${result.videoEmbed}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen ></iframe> </div>`;
+          modalAbroadBox.append(modalAbroadVideoEmbed);
+        }
+        //detailInfo
+        if (result.detailInfo != null) {
+          let modalAbroadDetailInfo = `<div class="side-by-side-buttons"> <button data-micromodal-close class="btn btn-primary btn-sm">${result.detailInfo}</button> </div>`;
+          modalAbroadBox.append(modalAbroadDetailInfo);
+        }
+        MicroModal.show("modal-abroad");
+        localStorage.setItem("isvakifKatilimModalAbroad", "true");
+      },
+    });
+  }
+};
+if ($("#modal-abroad").length > 0) {
+  VK.modalAbroad();
+}
+
+//PAGE HAS ITEM
+let pageIsMobile = $(window).width() < 1024;
+
+//PAGE HAS ITEM
+VK.pageHasItem = function (e) {
+  return $(e).length > 0;
+};
+
+// DEVICE DETECTION
+let currentUserAgent = null;
+VK.deviceDetection = function () {
+  let userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.indexOf("android") > 1 && userAgent.indexOf("huawei") > 1) {
+    currentUserAgent = "huawei";
+    body.addClass("huawei-device");
+  } else if (userAgent.indexOf("android") > 1) {
+    currentUserAgent = "android";
+    body.addClass("android-device");
+  } else if (userAgent.indexOf("iphone") > 1 || userAgent.indexOf("ipad") > 1) {
+    currentUserAgent = "ios";
+    body.addClass("ios-device");
+  } else if (userAgent.indexOf("rv:11") > 1) {
+    currentUserAgent = "ie11";
+    body.addClass("ie11");
+  }
+  return currentUserAgent;
+};
+VK.deviceDetection();
+
+// ADD CLASS ON SCROLL
+VK.addClassOnScroll = function (element, className, topPosition) {
+  if (
+    document.documentElement.scrollTop >= topPosition ||
+    document.body.scrollTop >= topPosition
+  ) {
+    element.addClass(className);
+  } else {
+    element.removeClass(className);
+  }
+};
+
+// ANCHOR MENU ************
+let anchorMenuItems = $(".anchor-menu-item");
+let anchorMenuSection = $(".anchor-menu-section");
+let pageHasAnchorMenu = VK.pageHasItem(anchorMenu);
+let anchorMenuPositonTop = 0;
+if (pageHasAnchorMenu === true) {
+  setTimeout(function () {
+    anchorMenuPositonTop = anchorMenu.offset().top;
+  }, 100);
+  header.addClass("static");
+}
+
+VK.onePageNavigation = () => {
+  $(document).on("scroll", onScroll);
+  let navItems = document.querySelectorAll(".anchor-menu-item");
+  [].forEach.call(navItems, function (el) {
+    el.addEventListener("click", function (e) {
+      $(document).off("scroll");
+      [].forEach.call(navItems, function (item) {
+        item.classList.remove("active");
+      });
+      el.classList.add("active");
+      e.preventDefault();
+      e.stopPropagation();
+      let scrollTargetLocation = el.getAttribute("href");
+
+      gsap.to(window, {
+        duration: 0.5,
+        scrollTo: {
+          y: scrollTargetLocation,
+          offsetY: 60,
+        },
+        onComplete: function () {
+          $(document).on("scroll", onScroll);
+        },
+      });
+    });
+  });
+};
+if (pageHasAnchorMenu === true) {
+  VK.onePageNavigation();
+}
+
+function getScrollTop() {
+  if (typeof pageYOffset != "undefined") {
+    //most browsers except IE before #9
+    return pageYOffset;
+  } else {
+    var B = document.body; //IE 'quirks'
+    var D = document.documentElement; //IE with doctype
+    D = D.clientHeight ? D : B;
+    return D.scrollTop;
+  }
+}
+
+function onScroll(event) {
+  var scrollPos = getScrollTop() + 60;
+  $(".anchor-menu-item").each(function () {
+    var currLink = $(this);
+    var refElement = $(currLink.attr("href"));
+    if (
+      refElement.position().top <= scrollPos &&
+      refElement.position().top + refElement.height() > scrollPos
+    ) {
+      $(".anchor-menu-item").removeClass("active");
+      currLink.addClass("active");
+    } else {
+      currLink.removeClass("active");
+    }
+  });
+}
+
+// SHOW OVERLAY
+const overlay = $("#overlay");
+VK.showOverlay = function () {
+  overlay.addClass("active");
+};
+
+// HIDE OVERLAY
+VK.hideOverlay = function () {
+  overlay.removeClass("active");
+};
+
+const navigationItem = $(".navigation-item"),
+  desktopSearchHandler = $("#desktop-search-handler"),
+  menuDetailBox = $(".menu-detail-box"),
+  menuDetail = $(".menu-detail"),
+  menuSearchInput = document.getElementById("menu-search-input");
+
+// HIDE MENU
+VK.hideMenuDetail = function () {
+  menuDetailBox.removeClass("active");
+  desktopSearchHandler.removeClass("active");
+  navigationItem.removeClass("active");
+  menuDetail.removeClass("selected");
+};
+
+// Navigation Class Events
+VK.showMenuDetail = function (target, targetElement) {
+  let isActive = $(target).hasClass("active");
+
+  if (isActive != true) {
+    menuDetailBox.addClass("active");
+    navigationItem.removeClass("active");
+    desktopSearchHandler.removeClass("active");
+    menuDetail.removeClass("selected");
+    $(target).addClass("active");
+    $(targetElement).addClass("selected");
+    VK.showOverlay();
+  } else {
+    menuDetailBox.removeClass("active");
+    VK.hideMenuDetail();
+    $(target).removeClass("active");
+    $(targetElement).removeClass("selected");
+    VK.hideOverlay();
+  }
+};
+
+// Navigation Handlers for Mega Menu
+VK.menuHandlers = function () {
+  const navHandlerItem = document.querySelectorAll(".navigation-item-handler");
+  for (let item of navHandlerItem) {
+    item.addEventListener("click", function () {
+      const id = $(this).attr("data-id");
+      VK.showMenuDetail(this, id);
+      if (id === "#header-search") VK.searchInputFocus();
+    });
+  }
+};
+VK.menuHandlers();
+
+// Search Focus
+VK.searchInputFocus = function () {
+  $(menuSearchInput).focus();
+};
+
+// ACCORDIONS
+VK.accordions = function () {
+  let accordionButtons = $(".accordion-button"),
+    accordionPanels = $(".accordion-panel"),
+    accordionBoxes = $(".accordion-box"),
+    thisAccordion = null,
+    isAccordionActive = false,
+    nextAccordionPanel = null,
+    nextPanelHeight = 0,
+    activeIndex = -1,
+    nextIndex = -1,
+    activePanelHeight = 0;
+
+  $(accordionButtons).on("click", function () {
+    activeIndex = nextIndex;
+    nextIndex = $(this).parents(".accordion-box").index();
+    accordionButtons = $(this).parents(".accordion").find(".accordion-button");
+    accordionPanels = $(this).parents(".accordion").find(".accordion-panel");
+    accordionBoxes = $(this).parents(".accordion").find(".accordion-box");
+    thisAccordion = $(this).parents(".accordion-box");
+    isAccordionActive = thisAccordion.hasClass("active");
+    nextAccordionPanel = $(this).next(".accordion-panel");
+    activePanelHeight = nextPanelHeight;
+    nextPanelHeight = nextAccordionPanel[0].scrollHeight;
+
+    if (isAccordionActive != true) {
+      let scrollTargetLocation = $(this).offset().top - 80;
+      if (nextIndex >= activeIndex) {
+        scrollTargetLocation -= activePanelHeight;
+      }
+
+      accordionBoxes.removeClass("active");
+      thisAccordion.addClass("active");
+      accordionPanels.css("max-height", 0);
+      nextAccordionPanel.css("max-height", nextPanelHeight);
+      gsap.to(window, {
+        duration: 0.5,
+        scrollTo: {
+          y: scrollTargetLocation,
+          offsetY: 0,
+        },
+      });
+    } else {
+      accordionBoxes.removeClass("active");
+      accordionPanels.css("max-height", 0);
+      nextPanelHeight = 0;
+      activeIndex = -1;
+      nextIndex = -1;
+      activePanelHeight = 0;
+    }
+  });
+};
+VK.accordions();
+
+// ACCORDION HOLDER
+VK.accordionHolder = function () {
+  $(".accordion-holder-button").on("click", function () {
+    $(this).parents(".accordion-holder").toggleClass("active-accordion-holder");
+  });
+};
+VK.accordionHolder();
+
+//  MOBILE MENU HANDLER
+const mobileMenuHandlerButton = $(".mobile-menu-handler");
+let isMobileMenuActive = false;
+VK.showMobileMenu = function () {
+  mobileMenuHandlerButton.on("click", function () {
+    isMobileMenuActive = body.hasClass("mobile-menu-active");
+    if (isMobileMenuActive != true) {
+      body.addClass("mobile-menu-active");
+    } else {
+      body.removeClass("mobile-menu-active");
+    }
+  });
+};
+VK.showMobileMenu();
+
+// HOME HERO SLIDER
+const sliderNavItem = $(".slider-navigation button");
+VK.homeHeroSlider = function () {
+  var homeHeroGlider = new Glide("#home-hero-glider", {
+    autoplay: 4000,
+    dragThreshold: 0,
+    swipeThreshold: 10,
+    hoverpause: false,
+    gap: 0,
+    throttle: 0,
+    breakpoints: {
+      992: {
+        autoplay: false,
+        rewind: false,
+      },
+    },
+  });
+
+  homeHeroGlider.on(["mount.after", "run"], function () {
+    sliderNavItem.removeClass("active");
+    sliderNavItem.eq(homeHeroGlider.index).addClass("active");
+  });
+
+  homeHeroGlider.mount();
+
+  sliderNavItem.on("click", function () {
+    sliderNavItem.removeClass("active");
+    $(this).addClass("active");
+    homeHeroGlider.go("=" + $(this).index() + "");
+  });
+};
+if (VK.pageHasItem("#home-hero-slider")) {
+  VK.homeHeroSlider();
+}
+VK.heroSlider = function () {
+  var homeHeroGlider = new Glide("#hero-glider", {
+    autoplay: 4000,
+    dragThreshold: 0,
+    swipeThreshold: 10,
+    hoverpause: false,
+    gap: 0,
+    throttle: 0,
+    breakpoints: {
+      992: {
+        autoplay: false,
+        rewind: false,
+      },
+    },
+  });
+
+  homeHeroGlider.mount();
+};
+if (VK.pageHasItem("#hero-slider")) {
+  VK.heroSlider();
+}
+
+// CARDS SLIDER
+VK.cardsSlider = function () {
+  let cardSlidersItems = $(".cards-slider");
+
+  for (let j = 0; j < cardSlidersItems.length; j++) {
+    let cardSliders = new Glide(cardSlidersItems[j], {
+      perView: 3,
+      dragThreshold: 0,
+      swipeThreshold: 10,
+      rewind: false,
+      gap: 30,
+      breakpoints: {
+        992: {
+          perView: 1.2,
+          gap: 16,
+        },
+      },
+    });
+    cardSliders.on(["mount.after", "run"], function () {
+      let totalIndex = $(cardSlidersItems).eq(j).find(".glide__slide").length;
+      let arrowLeft = $(cardSlidersItems).eq(j).find(".glide__arrow--left");
+      let arrowRight = $(cardSlidersItems).eq(j).find(".glide__arrow--right");
+      if (cardSliders.index > 0) {
+        arrowLeft.removeClass("disabled");
+        arrowLeft.prop("disabled", false);
+      } else {
+        arrowLeft.addClass("disabled");
+        arrowLeft.prop("disabled", true);
+      }
+      if (cardSliders.index === totalIndex - 3) {
+        arrowRight.addClass("disabled");
+        arrowRight.prop("disabled", true);
+      } else {
+        arrowRight.removeClass("disabled");
+        arrowRight.prop("disabled", false);
+      }
+      $(cardSlidersItems)
+        .eq(j)
+        .find(".glide__slide")
+        .removeClass("visible-glide");
+      for (let i = cardSliders.index; i < cardSliders.index + 3; i++) {
+        $(cardSlidersItems)
+          .eq(j)
+          .find(".glide__slide")
+          .eq(i)
+          .addClass("visible-glide");
+      }
+    });
+    cardSliders.mount();
+  }
+};
+if (VK.pageHasItem(".cards-slider")) {
+  VK.cardsSlider();
+}
+
+// MASK AREA
+VK.maskArea = function () {
+  let mask = $(".mask-area");
+
+  $(mask).each(function (i) {
+    const height = $(this).height();
+
+    if (height >= 300) {
+      this.classList.add("mask");
+      this.lastElementChild.classList.remove("d-none");
+    } else {
+      this.classList.remove("mask");
+      this.lastElementChild.classList.add("d-none");
+    }
+  });
+
+  let target;
+  $(".mask-area-open-btn").on("click", function () {
+    target = $(this).parents(".mask-area");
+    target.addClass("opened");
+  });
+};
+VK.maskArea();
+
+// TABS
+const tabButtons = $(".tab-button");
+const tabSections = $(".tab-section");
+VK.tabs = function () {
+  tabButtons.on("click", function () {
+    let currentTabButtons = $(this)
+      .parents(".tab-navigation")
+      .find(".tab-button");
+    currentTabButtons.removeClass("active");
+    $(this).addClass("active");
+    let targetTabSection = $(this).data("target");
+    let currentTabSections = $(targetTabSection)
+      .parents(".tab-sections")
+      .find(".tab-section");
+    currentTabSections.removeClass("active");
+    $(targetTabSection).addClass("active");
+  });
+};
+VK.tabs();
+
+// COOKIES CONTROL
+const cookieNotification = $("#cookie-notification");
+const functionalCookies = $("#functional-cookies");
+const personalisationCookies = $("#personalisation-cookies");
+const performansCookies = $("#performans-cookies");
+
+VK.cookiesControl = function () {
+  let isCookieAccepted = localStorage.getItem("isCookieAccepted");
+
+  if (isCookieAccepted == null || isCookieAccepted == "false") {
+    localStorage.setItem("isCookieAccepted", "false");
+    setTimeout(function () {
+      cookieNotification.addClass("active");
+    }, 900);
+  }
+
+  $("#cookie-accept-btn").on("click", function () {
+    localStorage.setItem("isCookieAccepted", "true");
+    cookieNotification.removeClass("active");
+  });
+
+    $("#cookie-not-accept-btn").on("click", function () {
+        localStorage.setItem("isCookieAccepted", "false");
+        cookieNotification.removeClass("active");
+    });
+
+  // ZORUNLU
+  localStorage.setItem("functionalCookies", true);
+
+  let isPersonalisationCookiesAccepted = localStorage.getItem(
+    "personalisationCookies"
+  );
+
+  if (
+    isPersonalisationCookiesAccepted == "false" &&
+    VK.pageHasItem("#personalisation-cookies")
+  ) {
+    personalisationCookies[0].checked = false;
+  } else {
+    if (VK.pageHasItem("#personalisation-cookies")) {
+      personalisationCookies[0].checked = true;
+    }
+  }
+
+  // ----
+
+  let isPerformansCookiesAccepted = localStorage.getItem("performansCookies");
+
+  if (
+    isPerformansCookiesAccepted === "false" &&
+    VK.pageHasItem("#performans-cookies")
+  ) {
+    performansCookies[0].checked = false;
+  } else {
+    if (VK.pageHasItem("#performans-cookies")) {
+      performansCookies[0].checked = true;
+    }
+  }
+
+  // if (isPersonalisationCookiesAccepted == "") {
+  //   localStorage.getItem("personalisationCookies");
+  // }
+
+  // localStorage.setItem("performansCookies", true);
+
+  // functionalCookies.on("click", function () {
+  //   localStorage.setItem("functionalCookies", true);
+  // });
+
+  personalisationCookies.on("click", function () {
+    localStorage.setItem("personalisationCookies", $(this).is(":checked"));
+  });
+
+  performansCookies.on("click", function () {
+    localStorage.setItem("performansCookies", $(this).is(":checked"));
+  });
+
+  // setTimeout(function () {
+  //   if (ssss == "false") {
+
+  //   } else {
+  //     personalisationCookies[0].checked = true;
+  //   }
+  // }, 1000);
+};
+VK.cookiesControl();
+
+// COPY PAGE URL
+VK.copyPageUrl = function () {
+  let dummy = document.createElement("input"),
+    text = window.location.href;
+
+  document.body.appendChild(dummy);
+  dummy.value = text;
+  dummy.select();
+  document.execCommand("copy");
+  document.body.removeChild(dummy);
+};
+
+// POPOVERS
+VK.popovers = function () {
+  const popoverToggleButtons = $(".popover-toggle-btn");
+  popoverToggleButtons.on("click", function (e) {
+    e.stopPropagation();
+    let thisPopoverWrapper = $(this).parents(".popover-wrapper");
+    if (thisPopoverWrapper.hasClass("popover-active")) {
+      $(".popover-wrapper").removeClass("popover-active");
+    } else {
+      $(".popover-wrapper").removeClass("popover-active");
+      thisPopoverWrapper.addClass("popover-active");
+    }
+  });
+  $(".popover-wrapper").on("click", function (e) {
+    e.stopPropagation();
+  });
+  $(window).on("click", function () {
+    $(".popover-wrapper").removeClass("popover-active");
+  });
+};
+VK.popovers();
+
+// POP-UP
+VK.modal = function () {
+  // Download Modal
+  const card = $(".card-data"),
+    downloadBtn = $("#modal-download-btn"),
+    downloadImage = $("#modal-download-image");
+
+  $(card).on("click", function (e) {
+    e.preventDefault();
+    let url = $(this).attr("href");
+    $(downloadBtn).attr("href", url);
+    $(downloadImage).attr("src", url);
+  });
+
+  // Modal Close Trigger
+  $("[data-micromodal-close]").on("click", function () {
+    $(this).parents(".modal").removeClass("is-open");
+      $(this).parents(".modal").attr("aria-hidden", "true");
+      $(".button-player").removeClass("playing");
+    $("body").removeClass("none-pointer");
+  });
+};
+VK.modal();
+MicroModal.init({
+  onShow: (modal) => $("body").addClass("none-pointer"),
+  onClose: (modal) =>
+    setTimeout(function () {
+      $("body").removeClass("none-pointer");
+    }, 100),
+});
+
+// INPUT VALUE TYPES
+VK.inputValueTypes = function () {
+  $(".input-type-money")
+    .toArray()
+    .forEach(function (field) {
+      new Cleave(field, {
+        numeral: true,
+        numeralThousandsGroupStyle: "thousand",
+        numeralDecimalMark: ",",
+        delimiter: ".",
+      });
+    });
+
+  $(".input-type-profit-rate")
+    .toArray()
+    .forEach(function (field) {
+      new Cleave(field, {
+        numericOnly: true,
+        delimiter: ".",
+        blocks: [1, 2],
+        minLength: 4,
+      });
+    });
+
+  $(".input-tckn")
+    .toArray()
+    .forEach(function (field) {
+      new Cleave(field, {
+        numericOnly: true,
+        blocks: [11],
+      });
+    });
+
+  $(".input-iban")
+    .toArray()
+    .forEach(function (field) {
+      new Cleave(field, {
+        prefix: "TR",
+        numericOnly: true,
+        blocks: [4, 4, 4, 4, 4, 4, 2],
+      });
+    });
+
+  $(".input-phone")
+    .toArray()
+    .forEach(function (field) {
+      new Cleave(field, {
+        numericOnly: true,
+        blocks: [0, 3, 0, 3, 2, 2],
+        delimiters: ["(", ")", " ", "", ""],
+      });
+    });
+
+  // Phone cannot start zero
+  $(".input-phone").keypress(function (e) {
+    if (e.which == "0".charCodeAt(0) && $(this).val().trim() == "") {
+      return false;
+    }
+  });
+
+  $(".input-reference-number")
+    .toArray()
+    .forEach(function (field) {
+      new Cleave(field, {
+        numericOnly: true,
+        blocks: [0, 14],
+        delimiters: ["VK", " "],
+      });
+    });
+
+  // Allows only letters for the input
+  $(".input-letters").on("input", function () {
+    var regexp = /[^a-zA-Z wığüşöçĞÜŞÖÇİ]/g;
+    if ($(this).val().match(regexp)) {
+      $(this).val($(this).val().replace(regexp, ""));
+    }
+  });
+
+  // Allows only numeric for the input
+  $(".input-numeric").on("input", function () {
+    var regexp = /[^0-9]/g;
+    if ($(this).val().match(regexp)) {
+      $(this).val($(this).val().replace(regexp, ""));
+    }
+  });
+};
+VK.inputValueTypes();
+
+// RANGE
+VK.range = function () {
+  $(".range").on("input", function () {
+    let currentRangeVal = $(this).val();
+    let targetRangeInput = $(this).parents(".form-group").find(".range-input");
+    targetRangeInput.val(currentRangeVal);
+  });
+  $(".range-input").on("focusout", function () {
+    let currentRangeInputVal = Number($(this).val());
+    let targetRange = $(this).parents(".form-group").find(".range");
+    let targetRangeMax = targetRange.attr("max");
+    if (Number(currentRangeInputVal) > Number(targetRangeMax)) {
+      currentRangeInputVal = targetRangeMax;
+    }
+    if (Number(currentRangeInputVal) <= 0) {
+      currentRangeInputVal = 1;
+    }
+    $(this).val(currentRangeInputVal);
+    targetRange.val(currentRangeInputVal);
+  });
+};
+VK.range();
+
+$(".form-control").on("keypress", function (e) {
+  if (e.keyCode == 13) {
+    $(this).blur();
+  }
+});
+
+// CHECKBOX DISABLE HANDLER
+VK.checkboxDisableHandler = function () {
+  const disableHandlers = $(".disable-handler input");
+  let targetInput = null;
+  let isDisabled = true;
+  $(disableHandlers).on("click", function () {
+    targetInput = $(this).parents(".form-group-checkbox").next(".form-control");
+    isDisabled = targetInput.hasClass("disabled");
+    if (isDisabled) {
+      targetInput.removeClass("disabled");
+    } else {
+      targetInput.addClass("disabled");
+    }
+  });
+};
+VK.checkboxDisableHandler();
+
+// SHOW OTHER MAP FILTERS
+VK.showOtherMapFilters = function () {
+  const otherMapFiltersButton = $("#other-map-filters-handler");
+  const otherMapFiltersSection = $("#other-map-filters");
+  $(otherMapFiltersButton).on("click", function () {
+    $(this).toggleClass("active");
+    $(otherMapFiltersSection).toggleClass("active");
+  });
+};
+VK.showOtherMapFilters();
+
+// MAP CARD HANDLER
+VK.mapCardHandler = function () {
+  const mapCard = $(".map-card");
+  let cardCoordinate = null;
+  let mapIframe = "";
+  let desktopMapWrapper = $("#desktop-map-wrapper");
+  let mobileMapWrapper;
+  let currentMobileMapWrapper;
+  $(document).on("click", ".map-card", function () {
+    mobileMapWrapper = $(".mobile-map-wrapper");
+
+    cardCoordinate = $(this).data("coordinate");
+    currentMobileMapWrapper = $(this)
+      .parents(".map-list-item")
+      .find(".mobile-map-wrapper");
+    mapIframe = `<iframe src="https://maps.google.com/maps?q=${cardCoordinate}&hl=tr;z=14&output=embed"></iframe>`;
+
+    if (pageIsMobile) {
+      mobileMapWrapper.removeClass("active");
+      currentMobileMapWrapper.addClass("active");
+
+      mobileMapWrapper.html("");
+      currentMobileMapWrapper.html(mapIframe);
+    } else {
+      desktopMapWrapper.html(mapIframe);
+    }
+  });
+};
+if (VK.pageHasItem("#map-list-box")) {
+  VK.mapCardHandler();
+}
+
+// KULLANICININ VAKIF KATILIM MÜŞTERİSİ OLUP OLMADIĞINI SORGULAMA
+VK.checkUser = function () {
+  const x = document.getElementById("customer");
+  const y = document.getElementById("not-customer");
+
+  $(".check-user").on("change", function () {
+    const radioButtonValue = $(
+      "input[name=CustomerType]:checked",
+      ".form"
+    ).attr("data-id");
+    if (radioButtonValue === "1") {
+      x.classList.remove("d-none");
+      y.classList.add("d-none");
+    } else {
+      y.classList.remove("d-none");
+      x.classList.add("d-none");
+    }
+  });
+};
+VK.checkUser();
+
+VK.printData = function (toPrint, title) {
+  const tablestyle = `<style type="text/css">*{font-family: "HCo Gotham SSm", "Helvetica Neue", Arial, sans-serif;}table{border:1px solid #D9D9D9;border-radius:4px;overflow:hidden;margin-bottom:24px;background-color:#fff}table{width:100%;caption-side:bottom;border-collapse:collapse}table thead{border-bottom:1px solid #D9D9D9}table thead th{background-color:#25477B !important;color:#fff;font-weight:500;text-align:center;padding:10px;height:40px;font-size:12px}table thead th:first-child{text-align:left}table tbody tr{border-bottom:1px solid #D9D9D9}table tbody tr:last-child{border-bottom:none}table tbody th,table tbody td{font-weight:400;padding:8px 15px;border-right:1px solid #D9D9D9;font-size:14px}@media (min-width: 992px){table tbody th,table tbody td{padding:15px}}table tbody th:last-child,table tbody td:last-child{border-right:none}table tbody th{text-align:left}table tbody td{text-align:center}.table-responsive{overflow-x:auto;-webkit-overflow-scrolling:touch}@media (max-width: 576px){.table-responsive table{min-width:525px}}.table-striped tbody tr:nth-child(even){background-color:#F9F9F9}.table-text-right table thead th{text-align:right}.table-text-right table tbody td{text-align:right}.table-light{border-radius:0;border:none}.table-light table thead{border-color:#E6E6E6}.table-light table thead th{background-color:#fff;color:#8C8C8C;font-size:12px;padding-left:0;padding-right:0}.table-light table tbody tr{border-color:#E6E6E6}.table-light table tbody th,.table-light table tbody td{font-size:13px;border:none;padding:21px 0}.table-light table tbody th{font-weight:500}#odeme-plani{margin-top:80px}#odeme-plani.table-print{margin-top:0}#odeme-plani-table-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;margin-bottom:24px;}#odeme-plani-table-head h3{margin-bottom:0}#odeme-plani-table-head a{margin-left:20px;font-size:14px;font-weight:500;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex}#odeme-plani-table-head a:hover{text-decoration:none;color:#325892}#odeme-plani-table-head a .icon{font-size:24px;margin-right:6px}.print{display:none !important}</style>`;
+
+  const x = document.getElementById(toPrint);
+  let y = window.open("");
+
+  y.document.write(`<html><head><title>${title}</title>`);
+  y.document.write(tablestyle);
+  y.document.write("</head>");
+
+  y.document.write("<body>");
+  y.document.write(x.outerHTML);
+  y.document.write("</body>");
+  y.document.write("</html>");
+
+  y.document.close();
+  y.focus();
+  y.print();
+};
+
+// FİNANSMAN HESAPLAMA
+VK.calculateFinancing = function () {
+  // API URL
+  const calculateFinancingApiUrl = CONFIG.calculate.financing.url;
+
+  // METHOD
+  const calculateFinancingApiMethod = CONFIG.calculate.financing.method;
+
+  // FİNANSMAN TÜRÜ SELECT ***(ZEPTO İLE SELECT DATA VALUE ALMAK PROBLEM OLDUĞU İÇİN BU ŞEKİLDE PURE JS İLE SEÇİM YAPILDI)
+  const financingTypeSelect = document.getElementById("financing-type-select");
+
+  // TAKSİT SAYISI RANGE ELEMANI
+  const numberOfInstallmentsRange = $("#number-of-installments-range");
+
+  // TAKSİT SAYISI INPUT ELEMANI
+  const numberOfInstallmentsRangeInput = $(
+    "#number-of-installments-range-input"
+  );
+
+  // TAKSİT SAYISI SELECT ELEMANI
+  const numberOfInstallmentsSelect = $("#number-of-installments-select");
+
+  // MAX TAKSİT SAYISI DOM ELEMENT
+  const maxInstallmentsInfoBox = $("#max-installments");
+
+  // FİNANSMAN TUTARI INPUT
+  const financingAmountInput = $("#financing-amount");
+
+  // KÂR ORANI INPUT
+  const profitRateInput = $("#profit-rate");
+
+  // KÂR ORANI CHECKBOX
+  const profitRateCheckbox = $("#profit-rate-checkbox");
+
+  // FİNANMAN TUTARINA YADA TAKSİT TUTARINA GÖRE İÇİN RADIO BUTONLAR
+  const calculateTypeRadioButtons = $(".finance-calculate-type-handler");
+
+  // VAR SAYILAN KÂR ORANI
+
+  //get ajax request for defaultProfitRate
+
+  let defaultProfitRate = null;
+  
+  let financingTypeDefaultValueForSelected = $('#financing-type-select').find(":selected").val();
+  let installmentDefaultValueForSelected = $('#number-of-installments-select').find(":selected").val();
+  let amountDefaultValue = $("#financing-amount").val();
+  let calculateTypeDefaultValueForSelected = $("input[name='finansman-type']:checked").val();
+
+  let financingProps = {
+    type: financingTypeDefaultValueForSelected,
+    installments: installmentDefaultValueForSelected,
+    amount: amountDefaultValue,
+    profitRate: defaultProfitRate,
+    calculateType: calculateTypeDefaultValueForSelected,
+    langId: langId,
+    language: language,
+  };
+
+  // TAKSİT SAYISI SIFIRLAMA
+  const numberOfInstallmentsReset = function () {
+    numberOfInstallmentsRange.val("1");
+    numberOfInstallmentsRangeInput.val("1");
+    financingProps.installments = "1";
+  };
+
+
+
+    // API URL
+    const financingInstallmentApiUrl = CONFIG.calculate.financingInstallment.url;
+
+    // METHOD
+    const financingInstallmentApiMethod = CONFIG.calculate.financingInstallment.method;
+
+
+    const sendRequesForFinancingInstallment = function (data) {
+          var form = $('#financing-calculator');
+          var token = $('input[name="__RequestVerificationToken"]', form).val();
+        $.ajax({
+            url: `${financingInstallmentApiUrl}?langId=${data.langId}&language=${
+                data.language
+                }&financingType=${data.type}`,
+            type: financingInstallmentApiMethod,
+            data: {
+                __RequestVerificationToken: token
+            },
+            success: function (result) {
+                numberOfInstallmentsSelect.html(" ");
+                const installmentDropDownList = $("#number-of-installments-select");
+                var installmentValue = 1;
+                for (let i = 0; i < result.installments.length; i++) {
+                    if (result.installments[i].isSelected === true) {
+                        $(installmentDropDownList).append(
+                            `<option value="${result.installments[i].code}" selected>${result.installments[i].text}</option>`
+                        );
+                        $(installmentDropDownList).val(result.installments[i].code);
+                        installmentValue = result.installments[i].code;
+                    }
+                    else {
+                    $(installmentDropDownList).append(
+                        `<option value="${result.installments[i].code}">${result.installments[i].text}</option>`
+                        );
+                    }
+                }
+                financingProps.installments = installmentValue;
+                sendRequesFinancing(financingProps);
+            },
+        });
+    };
+
+  // FİNANSMAN TÜRÜ SEÇİMİNE GÖRE TAKSİT SAYISI BELİRLEME
+  $(financingTypeSelect).on("change", function () {
+    
+    let financingTypeVal = this.options[this.selectedIndex].value;
+
+    // FİNANSMAN TÜRÜ BELİRLEME
+      financingProps.type = financingTypeVal;
+      sendRequesForFinancingInstallment(financingProps);
+
+    // AÇIKLAMALAR
+    $(`.calculator-description > *`).removeClass("d-block");
+    $(`.calculator-description div[id="${financingTypeVal}"]`).addClass(
+      "d-block"
+    );
+  });
+
+  // RANGE İLE TAKSİT SAYISINI BELİRLEME
+  numberOfInstallmentsRange.on("change", function () {
+    financingProps.installments = $(this).val();
+    sendRequesFinancing(financingProps);
+    setTimeout(function () {
+      $("#profit-rate-el").text("%" + $("#profit-rate").val());
+    }, 350);
+  });
+
+  // RANGE INPUT İLE TAKSİT SAYISINI BELİRLEME
+  numberOfInstallmentsRangeInput.on("keyup", function () {
+    clearTimeout(INPUT_TIMER);
+    INPUT_TIMER = setTimeout(() => {
+      financingProps.installments = $(this).val();
+        sendRequesFinancing(financingProps);
+
+        setTimeout(function () {
+            $("#profit-rate-el").text("%" + $("#profit-rate").val());
+        }, 350);
+
+    }, 300);
+  });
+
+  // RANGE INPUT İLE TAKSİT SAYISINI BELİRLEME
+  numberOfInstallmentsSelect.on("change", function () {
+    financingProps.installments = $(this).val();
+      sendRequesFinancing(financingProps);
+
+      setTimeout(function () {
+          $("#profit-rate-el").text("%" + $("#profit-rate").val());
+      }, 350);
+  });
+
+  // FİNANSMAN TUTARI BELİRLEME
+  $(financingAmountInput).on("keyup", function () {
+    clearTimeout(INPUT_TIMER);
+    INPUT_TIMER = setTimeout(() => {
+        financingProps.amount = $(this).val();
+        sendRequesFinancing(financingProps);
+
+        setTimeout(function () {
+            $("#profit-rate-el").text("%" + $("#profit-rate").val());
+        }, 350);
+
+    }, 300);
+  });
+
+  // KÂR ORANI INPUT BELİRLEME
+  profitRateInput.on("keyup", function () {
+    clearTimeout(INPUT_TIMER);
+    INPUT_TIMER = setTimeout(() => {
+      financingProps.profitRate = $(this).val();
+      sendRequesFinancing(financingProps);
+      $("#profit-rate-el").text("%" + financingProps.profitRate);
+    }, 300);
+  });
+
+  // KÂR ORANI CHECKBOX HANDLER
+  profitRateCheckbox.on("change", function () {
+    if (profitRateInput.hasClass("disabled")) {
+      financingProps.profitRate = defaultProfitRate;
+    } else {
+      financingProps.profitRate = profitRateInput.val();
+    }
+    sendRequesFinancing(financingProps);
+    $("#profit-rate-el").text("%" + financingProps.profitRate);
+  });
+
+  calculateTypeRadioButtons.on("change", function () {
+      financingProps.calculateType = $(this).val();
+    sendRequesFinancing(financingProps);
+  });
+
+  // Aylık Ödenecek Taksit Tutarı Dom Elemanı
+  const installmentAmountEl = "#installment-amount-el";
+
+  // Geri Ödenecek Toplam Tutar Dom Elemanı
+  const totalAmountEl = "#total-amount-el";
+
+  // Kâr Oranı Dom Elemanı
+  const profitRateEl = "#profit-rate";
+
+  // İpotek Tesis Ücreti Dom Elemanı
+  const appraisementFeeEl = "#appraisement-fee-el";
+
+  // Ekspertiz Ücreti
+  const mortgageReleaseFeeEl = "#mortgage-release-fee";
+
+  const sendRequesFinancing = function (data) {
+      if (financingAmountInput.val() != "") {
+          var form = $('#financing-calculator');
+          var token = $('input[name="__RequestVerificationToken"]', form).val();
+      $.ajax({
+        url: `${calculateFinancingApiUrl}?langId=${data.langId}&language=${
+          data.language
+        }&financingType=${data.type}&amount=${data.amount.replace(
+          /\./g,
+          ""
+        )}&numberOfInstallments=${data.installments}&profitRate=${
+          data.profitRate
+        }&calculateType=${data.calculateType}`,
+          type: calculateFinancingApiMethod,
+          data: {
+              __RequestVerificationToken: token
+          },
+          success: function (result) {
+              if (result.isErrorFriendly === true) {
+                  $("#modal-financing-calculation").removeClass("is-open");
+                  $("#modal-financing-calculation").addClass("is-open");
+                  $("#modal-financing-calculation").attr("aria-hidden", "false");
+                  $("#financing-calculation-error-message").text(result.errorMessage);
+              }
+              else {
+          defaultProfitRate = result.profitRate;
+          $(installmentAmountEl).html(result.installmentAmount);
+          $(totalAmountEl).html(result.totalAmount);
+          if (!$(profitRateCheckbox).prop("checked"))
+            $(profitRateInput).val(result.profitRate);
+          $(appraisementFeeEl).html(result.appraisementFee);
+          $(mortgageReleaseFeeEl).html(result.mortgageReleaseFee);
+          $(paymentPlanTableEl).html("");
+                  $("#profit-rate-el").text("%" + result.profitRate);
+                  $("#calculation-result-installment-text").text(result.installmenLabelText);
+              }
+        },
+      });
+    }
+  };
+
+  // API URL
+  const paymentPlanApiUrl = CONFIG.calculate.paymentPlan.url;
+
+  // METHOD
+  const paymentPlanApiMethod = CONFIG.calculate.paymentPlan.method;
+
+  //  ÖDEME PLANI BUTONU
+  const getPaymentPlanButton = $("#get-payment-plan-button");
+
+  //  ÖDEME PLANI DOM ELEMANI
+  const paymentPlanTableEl = $("#odeme-plani");
+
+  getPaymentPlanButton.on("click", function () {
+      sendRequesPaymentPlan(financingProps);
+  });
+
+  // ÖDEME PLANI TABLOSU İÇİN
+  const sendRequesPaymentPlan = function (data) {
+      paymentPlanTableEl.html("");
+      var form = $('#financing-calculator');
+      var token = $('input[name="__RequestVerificationToken"]', form).val();
+    $.ajax({
+      url: `${paymentPlanApiUrl}?langId=${langId}&language=${language}&financingType=${
+        data.type
+      }&amount=${data.amount.replace(/\./g, "")}&numberOfInstallments=${
+        data.installments
+      }&profitRate=${data.profitRate}&calculateType=${data.calculateType}`,
+        type: paymentPlanApiMethod,
+        data: {
+            __RequestVerificationToken: token
+        },
+      success: function (result) {
+        const examplePaymentInfo = `<div id="example-payment-info" ><div class="payment-info-section" ><div class="payment-info-item" >${result.ornekOdemeBilgisiBaslik.finansmanTutari} <span>${result.ornekOdemeBilgisi.finansmanTutari}</span></div><div class="payment-info-item" >${result.ornekOdemeBilgisiBaslik.odenecekToplamTutar} <span>${result.ornekOdemeBilgisi.odenecekToplamTutar}</span></div></div><div class="payment-info-section" ><div class="payment-info-item" >${result.ornekOdemeBilgisiBaslik.taksitTutari} <span>${result.ornekOdemeBilgisi.taksitTutari}</span></div><div class="payment-info-item" >${result.ornekOdemeBilgisiBaslik.karOrani} <span id="kar-orani">${result.ornekOdemeBilgisi.karOrani}</span></div></div></div>`;
+        const paymentPlanTable = `<div id="odeme-plani-table-head" ><h3>${result.tableHeading}</h3> <a href="#" class="print"><svg class="icon icon-print"> <use xlink:href="#icon-print"></use> </svg>${result.print}</a> </div><table id="odeme-plani-table" ><thead></thead><tbody></tbody></table>`;
+        $(paymentPlanTableEl).append(examplePaymentInfo, paymentPlanTable);
+        $(".print").on("click", function () {
+          VK.printData("odeme-plani", result.tableHeading);
+        });
+        const paymentPlanTableHead = $("#odeme-plani-table thead");
+        for (let j = 0; j < result.tableHead.length; j++) {
+          $(paymentPlanTableHead).append(
+            `<th scope='col'>${result.tableHead[j]}</th>`
+          );
+        }
+        const paymentPlanTableElBody = $("#odeme-plani-table tbody");
+        for (let i = 0; i < result.tableBody.length; i++) {
+          $(paymentPlanTableElBody).append(
+            `<tr><th>${result.tableBody[i].taksitSayisi}</th><td>${result.tableBody[i].taksitTutari}</td><td>${result.tableBody[i].anaPara}</td><td>${result.tableBody[i].karTutari}</td><td>${result.tableBody[i].kkdfTutari}</td><td>${result.tableBody[i].bsmfTutari}</td><td>${result.tableBody[i].kalanAnaParaTutari}</td></tr>`
+          );
+        }
+      },
+    });
+  };
+
+  if (paymentPlanTableEl.hasClass("table-print")) {
+    sendRequesPaymentPlan(financingProps);
+  }
+};
+
+if (VK.pageHasItem("#financing-calculator")) {
+  VK.calculateFinancing();
+}
+
+// KREDİ KARTI TAKSİT HESAPLAMA
+
+VK.calculateCrediCard = function () {
+  // API URL
+  const calculateCreditCardApiUrl = CONFIG.calculate.creditCard.url;
+
+  // METHOD
+  const calculateCreditCardApiMethod = CONFIG.calculate.creditCard.method;
+
+  // API URL
+  const creditCardPaymentPlanApiUrl =
+    CONFIG.calculate.creditCardPaymentPlan.url;
+
+  // METHOD
+  const creditCardPaymentPlanApiMethod =
+    CONFIG.calculate.creditCardPaymentPlan.method;
+
+  //  TUTARI INPUT
+  const creditCardAmountInput = $("#credit-card-amount");
+
+  // TAKSİT SELECT ***(ZEPTO İLE SELECT DATA VALUE ALMAK PROBLEM OLDUĞU İÇİN BU ŞEKİLDE PURE JS İLE SEÇİM YAPILDI)
+  const creditCardInstallmentSelect = document.getElementById(
+    "credit-card-number-of-installments-select"
+  );
+
+  const creditCardInstallmentAmount = $("#credit-card-installment-amount-el");
+
+  const creditCardTotalAmount = $("#credit-card-total-amount-el");
+
+  const creditCardProfitRate = $("#credit-card-profit-rate-el");
+
+  const creditCardInstallmentCount = $("#credit-card-installment-count");
+
+  const creditCardKkdf = $("#credit-card-kkdf");
+
+  const creditCardBsmw = $("#credit-card-bsmw");
+
+  // ÖDEME PLANI
+  // const creditCardGetPaymentButton = $("#credit-card-get-payment-plan-button");
+
+  const paymentPlanTableEl = $("#odeme-plani");
+
+  let creditCardProps = {
+    profitRate: "1.89",
+    amount: "1.000",
+    installments: "3",
+    langId: langId,
+    language: language,
+  };
+
+  const sendRequesCreditCard = function (data) {
+    if (creditCardAmountInput.val() != "") {
+      $.ajax({
+        url: `${calculateCreditCardApiUrl}?langId=${data.langId}&language=${
+          data.language
+        }&amount=${data.amount.replace(/\./g, "")}&installments=${
+          data.installments
+        }&profitRate=${data.profitRate}`,
+        type: calculateCreditCardApiMethod,
+        success: function (result) {
+          creditCardInstallmentAmount.html(result.installmentAmount);
+          creditCardTotalAmount.html(result.totalAmount);
+          creditCardProfitRate.html(result.profitRate);
+          creditCardInstallmentCount.html(result.installmentCount);
+          creditCardKkdf.html(result.kkdf);
+          creditCardBsmw.html(result.bsmw);
+        },
+      });
+    }
+  };
+
+  // ÖDEME PLANI TABLOSU İÇİN
+  // const creditCardSendRequesPaymentPlan = function (data) {
+  //     paymentPlanTableEl.html("");
+  //     $.ajax({
+  //         url: `${creditCardPaymentPlanApiUrl}?langId=${data.langId}&language=${data.language}&amount=${data.amount}&installments=${data.installments}`,
+  //         type: creditCardPaymentPlanApiMethod,
+  //         success: function (result) {
+  //             const paymentPlanTable = `<div id="odeme-plani-table-head" ><h3>${result.tableHeading}</h3> <a href="${result.tablePrintUrl}?langId=${data.langId}&language=${data.language}&amount=${data.amount}&installments=${data.installments}" target="_blank" ><svg class="icon icon-print"> <use xlink:href="#icon-print"></use> </svg> Yazdır</a></div><thead></thead><tbody></tbody></table>`;
+  //             $(paymentPlanTableEl).append(paymentPlanTable);
+
+  //             const paymentPlanTableHead = $("#odeme-plani thead");
+
+  //             for (let j = 0; j < result.tableHead.length; j++) {
+  //                 $(paymentPlanTableHead).append(
+  //                     `<th scope='col'>${result.tableHead[j]}</th>`
+  //                 );
+  //             }
+
+  //             const paymentPlanTableElBody = $("#odeme-plani tbody");
+
+  //             for (let i = 0; i < result.tableBody.length; i++) {
+  //                 $(paymentPlanTableElBody).append("<tr></tr>");
+  //                 let tableRow = $("#odeme-plani tbody tr");
+  //                 for (let j = 0; j < Object.keys(result.tableBody[i]).length; j++) {
+  //                     $(tableRow)
+  //                         .eq(i)
+  //                         .append(`<th>${Object.values(result.tableBody[i])[j]}</th>`);
+  //                 }
+  //             }
+  //         },
+  //     });
+  // };
+
+  $(creditCardInstallmentSelect).on("change", function () {
+    let creditCardInstallmentVal = this.options[this.selectedIndex].value;
+    creditCardProps.installments = creditCardInstallmentVal;
+    sendRequesCreditCard(creditCardProps);
+  });
+
+  // FİNANSMAN TUTARI BELİRLEME
+  $(creditCardAmountInput).on("keyup", function () {
+    clearTimeout(INPUT_TIMER);
+    INPUT_TIMER = setTimeout(() => {
+      creditCardProps.amount = $(this).val();
+      sendRequesCreditCard(creditCardProps);
+    }, 300);
+  });
+
+  // creditCardGetPaymentButton.on("click", function () {
+  //     creditCardSendRequesPaymentPlan(creditCardProps);
+  // });
+};
+
+if (VK.pageHasItem("#credit-card-calculator")) {
+  VK.calculateCrediCard();
+}
+
+// KÂR PAYI HESAPLAMA
+VK.dividendCalculator = function () {
+  // API URL
+  const calculateDividendApiUrl = CONFIG.calculate.dividend.url;
+  const calculateMoneyExpiryApiUrl = CONFIG.calculate.moneyExpiry.url;
+
+  // METHOD
+  const calculateDividendApiMethod = CONFIG.calculate.dividend.method;
+  const calculateMoneyExpiryApiMethod = CONFIG.calculate.moneyExpiry.method;
+
+  let dividendProps = {
+    type: "KAH",
+    currencyUnit: "0",
+    expiry: "31",
+    principal: "100.000",
+    langId: langId,
+    language: language,
+  };
+
+  const dividendDateRange = $("#dividend-date-range");
+
+  // DIVIDEND ACCOUNT SELECT
+  const dividendAccountSelect = $("#dividend-account-select");
+
+  // PARA BİRİMİ SELECT ***(ZEPTO İLE SELECT DATA VALUE ALMAK PROBLEM OLDUĞU İÇİN BU ŞEKİLDE PURE JS İLE SEÇİM YAPILDI)
+  const currencySelect = document.getElementById("dividend-currency-select");
+
+  const currencySelectDetail = $("#dividend-currency-select");
+
+  // TUTAR INPUT DOM ELEMANI
+  const dividendAmountInput = $("#dividend-amount");
+
+  // TUTAR PARA BİRİMİ DOM ELEMANI
+  const dividendAmountNameEl = $("#dividend-amount-currency-name");
+
+  // VADE SELECT
+  const dividendExpirySelect = $("#dividend-expiry-select");
+
+  // GÜN SAYISI RANGE ELEMANI
+  const numberOfDividendRange = $("#number-of-dividend-range"); //slider
+
+  // GÜN SAYISI INPUT ELEMANI
+  const numberOfDividendRangeInput = $("#number-of-dividend-range-input");
+
+  const detailButton = $("#btn-detail");
+
+  detailButton.on("click", function () {
+    const url = $(this).attr("data-url");
+    var dividendExpiry = dividendExpirySelect.val();
+    if (Number(dividendExpiry) === 1) {
+      dividendExpiry = $("#number-of-dividend-range-input").val();
+    }
+
+    window.location.href = `${url}?dividendCurrency=${currencySelectDetail.val()}&dividendAmount=${dividendAmountInput.val()}&dividendExpiry=${dividendExpiry}`;
+  });
+
+  // HESAP TÜRÜ BELİRLEME
+  dividendAccountSelect.on("change", function () {
+    let accountTypeVal = $(this).val();
+    dividendProps.type = accountTypeVal;
+    sendRequesDividend(dividendProps);
+  });
+
+  // PARA BİRİMİ BELİRLEME
+  let currencyTypeVal;
+  $(currencySelect).on("change", function () {
+    currencyTypeVal = this.options[this.selectedIndex].value;
+    let currencyTypeName =
+          this.options[this.selectedIndex].getAttribute("data-currency-name");
+      var form = $('#dividend-calculator');
+      var token = $('input[name="__RequestVerificationToken"]', form).val();
+    $.ajax({
+      url: `${calculateMoneyExpiryApiUrl}?langId=${langId}&language=${language}&currencyTypeVal=${currencyTypeVal}`,
+        type: calculateMoneyExpiryApiMethod,
+        data: {
+            __RequestVerificationToken: token
+        },
+      success: function (result) {
+        $("#dividend-expiry-select").empty();
+        $.each(result.expirySelectOptions, function (index) {
+          var expirySelect = $("#dividend-expiry-select");
+          var expirySelectOption = `<option ${
+            index === 0 ? "selected" : ""
+          } value="${result.expirySelectOptions[index].value}">${
+            result.expirySelectOptions[index].text
+          }</option>`;
+          expirySelect.append(expirySelectOption);
+        });
+      },
+    });
+    if (currencyTypeVal === "24") {
+      $(numberOfDividendRange).attr("min", "91");
+      $(numberOfDividendRange).attr("value", "91");
+      $(numberOfDividendRangeInput).attr("min", "91");
+      $(numberOfDividendRangeInput).attr("value", "91");
+      $(dividendDateRange).find(".range-points span:first-child").html("91");
+    } else {
+      $(numberOfDividendRange).attr("min", "31");
+      $(numberOfDividendRange).attr("value", "31");
+      $(numberOfDividendRangeInput).attr("min", "31");
+      $(numberOfDividendRangeInput).attr("value", "31");
+      $(dividendDateRange).find(".range-points span:first-child").html("31");
+    }
+    dividendAmountNameEl.html(currencyTypeName);
+      dividendProps.currencyUnit = currencyTypeVal;
+      dividendProps.expiry = numberOfDividendRangeInput.val();
+    sendRequesDividend(dividendProps);
+    $(dividendDateRange).addClass("d-none");
+  });
+
+  // TUTAR BELİRLEME
+  dividendAmountInput.on("keyup", function () {
+    clearTimeout(INPUT_TIMER);
+    INPUT_TIMER = setTimeout(() => {
+      dividendProps.principal = $(this).val();
+      sendRequesDividend(dividendProps);
+    }, 300);
+  });
+
+  $(numberOfDividendRangeInput).attr("readonly", true);
+  let dividendPropsExpiry;
+  // VADE BELİRLEME
+  dividendExpirySelect.on("change", function () {
+    /*vade-range*/
+    dividendProps.expiry = $(this).val();
+    dividendPropsExpiry = $(this).val();
+    sendRequesDividend(dividendProps);
+    if (dividendProps.expiry === "1") {
+      $(dividendDateRange).removeClass("d-none");
+      if (currencyTypeVal === "24") {
+        $(numberOfDividendRange).attr("min", "90");
+        $(numberOfDividendRange).attr("value", "90");
+        $(numberOfDividendRangeInput).attr("min", "90");
+        $(numberOfDividendRangeInput).attr("value", "90");
+        $(dividendDateRange).find(".range-points span:first-child").html("90");
+      } else {
+        $(numberOfDividendRange).attr("min", "31");
+        $(numberOfDividendRange).attr("value", "31");
+        $(numberOfDividendRangeInput).attr("min", "31");
+        $(numberOfDividendRangeInput).attr("value", "31");
+        $(dividendDateRange).find(".range-points span:first-child").html("31");
+      }
+    } else {
+      $(dividendDateRange).addClass("d-none");
+    }
+  });
+
+  // GÜN BELİRLEME INPUT
+  numberOfDividendRangeInput.on("keyup", function () {
+    clearTimeout(INPUT_TIMER);
+    INPUT_TIMER = setTimeout(() => {
+      dividendProps.expiry = $(this).val();
+      sendRequesDividend(dividendProps);
+    }, 300);
+  });
+
+  // GÜN BELİRLEME RANGE
+  numberOfDividendRange.on("change", function () {
+    dividendProps.expiry = $(this).val();
+    sendRequesDividend(dividendProps);
+  });
+
+  // BÜRÜT KÂR DOM ELEMANI
+  const grossProfitEl = $("#dividend-gross-profit-el");
+
+  // HESABA YATACAK TOPLAM NET TUTAR DOM ELEMANI
+  const dividendTotalAmountEl = $("#dividend-total-amount-el");
+
+  // HESAP ADI DOM ELEMANI
+  const dividendAccountNameEl = $("#dividend-account-name-el");
+
+  // BRÜT ORAN DOM ELEMANI
+  const dividendGrossRateEl = $("#dividend-gross-rate-el");
+
+  // NET ORAN DOM ELEMANI
+  const dividendNetRateEl = $("#dividend-net-rate-el");
+
+  // NET KÂR DOM ELEMANI
+  const dividendNetProfitEl = $("#dividend-net-profit-el");
+
+  const sendRequesDividend = function (data) {
+    if (dividendAmountInput.val() != "") {
+      $(dividendAmountInput)
+        .parent()
+        .parent()
+        .find(".invalid-feedback")
+        .remove();
+        $(dividendAmountInput).removeClass("is-invalid");
+        var form = $('#dividend-calculator');
+        var token = $('input[name="__RequestVerificationToken"]', form).val();
+      $.ajax({
+        url: `${calculateDividendApiUrl}?langId=${langId}&language=${language}&accountType=${
+          data.type
+        }&currencyUnit=${data.currencyUnit}&principal=${data.principal.replace(
+          /\./g,
+          ""
+        )}&expiry=${data.expiry}`,
+          type: calculateDividendApiMethod,
+          data: {
+              __RequestVerificationToken: token
+          },
+        success: function (result) {
+          if (result.errorMessage.trim().length === 0) {
+            $(grossProfitEl).html(result.grossProfit);
+            $(dividendTotalAmountEl).html(result.totalAmount);
+            $(dividendAccountNameEl).html(result.accountName);
+            $(dividendGrossRateEl).html(result.grossRate);
+            $(dividendNetRateEl).html(result.netRate);
+            $(dividendNetProfitEl).html(result.netProfit);
+          } else {
+            $(dividendAmountInput).addClass("is-invalid");
+            $(dividendAmountInput)
+              .parent()
+              .parent()
+              .append(
+                `<span class='invalid-feedback' style="display:inline">${result.errorMessage}</span>`
+              );
+          }
+        },
+      });
+    }
+  };
+};
+
+if (VK.pageHasItem("#dividend-calculator")) {
+  VK.dividendCalculator();
+}
+
+// KUR KORUMALI TL HESABI KÂR PAYI HESAPLAMA
+VK.currencyProtectedCalculator = function () {
+  let currencyTypeVal = "TL";
+
+  $(function () {
+    dividendAccountSelect.trigger("change");
+  });
+  // API URL
+  const currencyProtectedApiUrl = CONFIG.calculate.currencyProtected.url;
+
+  // METHOD
+  const currencyProtectedApiMethod = CONFIG.calculate.currencyProtected.method;
+
+  // EXPIRY API URL
+  const expiryApiUrl = CONFIG.calculate.expiry.url;
+
+  // EXPIRY API METHOD
+  const expiryApiMethod = CONFIG.calculate.expiry.method;
+
+  let dividendProps = {
+    type: "",
+    currencyUnit: "0",
+    expiry: "",
+    accountAmount: "",
+    beginCurrency: "",
+    endCurrency: "",
+    langId: langId,
+    language: language,
+  };
+
+  // DIVIDEND ACCOUNT SELECT
+  const dividendAccountSelect = $("#account-type-select");
+  const currencySelect = $("#currency-select");
+
+  // TUTAR INPUT DOM ELEMANI
+  const dividendAmountInput = $("#protected-account-amount");
+
+  // VADE SELECT
+  const dividendExpirySelect = $("#dividend-expiry-select");
+
+  const beginCurrencyInput = $("#begin-currency");
+  const endCurrencyInput = $("#end-currency");
+
+  const amountType = $("#amount-type");
+
+  // HESAP TÜRÜ BELİRLEME
+  dividendAccountSelect.on("change", function () {
+    let accountTypeVal = $(this).val();
+    dividendProps.type = accountTypeVal;
+    if (accountTypeVal === this.options[0].value) {
+      $('#currency-select option[value="24"]').hide();
+      if (currencySelect.val() === "24") {
+        currencySelect.val(0).trigger("change");
+      }
+    } else {
+      $('#currency-select option[value="24"]').show();
+    }
+    setAmountType();
+    sendRequestExpiry(dividendProps);
+    sendRequesDividend(dividendProps);
+  });
+
+  function setAmountType() {
+    const accountType = dividendAccountSelect.val();
+    if (accountType === "KURKORUMALIHMB") {
+      amountType.html("TL");
+    } else {
+      amountType.html(currencyTypeVal);
+    }
+  }
+
+  $(currencySelect).on("change", function () {
+    dividendProps.currencyUnit = $(this).val();
+    currencyTypeVal =
+      this.options[this.selectedIndex].getAttribute("data-currency-name");
+    setAmountType();
+    sendRequesDividend(dividendProps);
+  });
+
+  $(dividendExpirySelect).on("change", function () {
+    dividendProps.expiry = $(this).val();
+    sendRequesDividend(dividendProps);
+  });
+
+  function maxAmountControl() {
+    const currencyType = $(currencySelect).val();
+    const amountValue = parseFloat(
+      $(dividendAmountInput).val().replaceAll(".", "").replace(",", ".")
+    );
+    const maxAmountValue = parseFloat(
+      $("#hdnMaxAmout").val().replaceAll(".", "").replace(",", ".")
+    );
+    const maxAmountValueForAu = parseFloat(
+      $("#hdnMaxAmoutForAu").val().replaceAll(".", "").replace(",", ".")
+    );
+    const maxValue =
+      currencyType == 15 || currencyType == 19
+        ? maxAmountValue
+        : currencyType == 24
+        ? maxAmountValueForAu
+        : 0;
+    const errorMessage =
+      currencyType == 15 || currencyType == 19
+        ? $("#hdnMaxAmountErrorMessage").val()
+        : $("#hdnMaxAmountErrorMessageForAu").val();
+
+    if (maxValue > 0 && amountValue > maxValue) {
+      $(dividendAmountInput).addClass("is-invalid");
+      $("#maxAmountFeedBack").html(errorMessage);
+      return false;
+    }
+    $(dividendAmountInput).removeClass("is-invalid");
+    $("#maxAmountFeedBack").html("");
+    return true;
+  }
+
+  // TUTAR BELİRLEME
+  dividendAmountInput.on("keyup", function () {
+    clearTimeout(INPUT_TIMER);
+    INPUT_TIMER = setTimeout(() => {
+      dividendProps.accountAmount = $(this).val();
+      sendRequesDividend(dividendProps);
+    }, 300);
+  });
+
+  beginCurrencyInput.on("keyup", function () {
+    clearTimeout(INPUT_TIMER);
+    INPUT_TIMER = setTimeout(() => {
+      dividendProps.beginCurrency = $(this).val();
+      sendRequesDividend(dividendProps);
+    }, 300);
+  });
+
+  endCurrencyInput.on("keyup", function () {
+    clearTimeout(INPUT_TIMER);
+    INPUT_TIMER = setTimeout(() => {
+      dividendProps.endCurrency = $(this).val();
+      sendRequesDividend(dividendProps);
+    }, 300);
+  });
+
+  beginCurrencyInput.on("keydown", function (e) {
+    return currencyControlBegin(e.key, $(this).val());
+  });
+
+  endCurrencyInput.on("keydown", function (e) {
+    return currencyControlEnd(e.key, $(this).val());
+  });
+
+  function currencyControlBegin(keyValue, value) {
+    const isNumber = /^[0-9]$/i.test(keyValue);
+    if (isNumber) {
+      const totalValue = parseFloat(
+        ("" + value + keyValue).replaceAll(".", "").replace(",", ".")
+      );
+      const maxCurrency = parseFloat(
+        $("#hdnMaxCurrency").val().replaceAll(".", "").replace(",", ".")
+      );
+      const maxValue = maxCurrency;
+      if (maxValue > 0 && totalValue > maxValue) {
+        return false;
+      }
+      return true;
+    }
+  }
+
+  function currencyControlEnd(keyValue, value) {
+    const isNumber = /^[0-9]$/i.test(keyValue);
+    if (isNumber) {
+      const totalValue = parseFloat(
+        ("" + value + keyValue).replaceAll(".", "").replace(",", ".")
+      );
+      const maxCurrencyForAu = parseFloat(
+        $("#hdnMaxCurrencyForAu").val().replaceAll(".", "").replace(",", ".")
+      );
+      const maxValue = maxCurrencyForAu;
+      if (maxValue > 0 && totalValue > maxValue) {
+        return false;
+      }
+      return true;
+    }
+  }
+
+  let beginCurrencyVal = $("#hdnMaxCurrency").val().split(",")[1].length;
+  let endCurrencyVal = $("#hdnMaxCurrencyForAu").val().split(",")[1].length;
+
+  $("#begin-currency")
+    .toArray()
+    .forEach(function (field) {
+      new Cleave(field, {
+        numeral: true,
+        numeralThousandsGroupStyle: "thousand",
+        numeralDecimalMark: ",",
+        delimiter: ".",
+        numeralDecimalScale: beginCurrencyVal,
+      });
+    });
+
+  $("#end-currency")
+    .toArray()
+    .forEach(function (field) {
+      new Cleave(field, {
+        numeral: true,
+        numeralThousandsGroupStyle: "thousand",
+        numeralDecimalMark: ",",
+        delimiter: ".",
+        numeralDecimalScale: endCurrencyVal,
+      });
+    });
+
+  // KUR FARKI
+  const differenceCurrencyEl = $("#difference-currency");
+
+  // HESABA YATACAK NET TUTAR
+  const netAmountEl = $("#net-amount");
+
+  // ÖDENECEK KAR PAYI
+  const profitShareel = $("#profit-share");
+
+  // ÖDENECEK KUR FARKI
+  const differenceCurrencyPaidEl = $("#difference-currency-paid");
+
+  // ANA PARA
+  const amounTlEl = $("#amount-tl");
+
+  // KAR PAYI + KUR FARKI
+  const totalProfitrateEl = $("#total-profit-rate");
+
+  const sendRequestExpiry = function (data) {
+    $.ajax({
+      url: `${expiryApiUrl}?langId=${data.langId}&language=${data.language}&type=${data.type}`,
+      type: expiryApiMethod,
+      success: function (result) {
+        // let allItems = dividendExpirySelect.children("option:enabled").eq(0);
+        dividendExpirySelect.empty();
+        dividendExpirySelect.removeClass("disabled");
+        // dividendExpirySelect.append(allItems);
+
+        for (let i = 0; i < result.expiries.length; i++) {
+          dividendExpirySelect.append(
+            `<option value="${result.expiries[i].expiryId}">${result.expiries[i].expiryName}</option>`
+          );
+        }
+
+        dividendExpirySelect.val(result.expiries[0].expiryId).trigger("change");
+      },
+    });
+  };
+
+  const sendRequesDividend = function (data) {
+    if (!maxAmountControl()) {
+      return false;
+    }
+
+    if (Object.values(data).filter((item) => item === "").length > 0) {
+      return false;
+    }
+
+    $.ajax({
+      url: `${currencyProtectedApiUrl}?langId=${langId}&language=${language}&accountType=${data.type}&currencyUnit=${data.currencyUnit}&accountAmount=${data.accountAmount}&beginCurrency=${data.beginCurrency}&endCurrency=${data.endCurrency}&expiry=${data.expiry}`,
+      type: currencyProtectedApiMethod,
+      success: function (result) {
+        if (
+          !result.errorMessage ||
+          result.errorMessage === null ||
+          result.errorMessage.trim().length === 0
+        ) {
+          $(differenceCurrencyEl).html(result.differenceCurrency);
+          $(netAmountEl).html(result.netAmount);
+          $(profitShareel).html(result.profitShare);
+          $(differenceCurrencyPaidEl).html(result.differenceCurrencyPaid);
+          $(amounTlEl).html(result.amountTL);
+          $(totalProfitrateEl).html(result.totalProfitRate);
+        } else {
+          $(dividendAmountInput).addClass("is-invalid");
+          $(dividendAmountInput)
+            .parents(".form-group")
+            .children(".invalid-feedback")
+            .html(result.errorMessage);
+        }
+      },
+    });
+  };
+};
+
+if (VK.pageHasItem("#currency-protected-calculator")) {
+  VK.currencyProtectedCalculator();
+}
+
+// IBAN SORGULAMA
+VK.ibanInterrogation = function () {
+  let ibanProps = {
+    customerNumber: "",
+    addNumber: "",
+    langId: langId,
+    language: language,
+  };
+
+  // API URL
+  const getIbanApiUrl = CONFIG.calculate.iban.url;
+
+  // METHOD
+  const getIbanApiUrlMethod = CONFIG.calculate.iban.method;
+
+  // IBAN SORGULA BUTONU DOM ELEMANI
+  const getIbanButton = $("#get-iban-button");
+
+  // MÜŞTERİ NO INPUT
+  const customerNumberInput = $("#customer-number-input-el");
+
+  // EK NO INPUT
+  const addNumberInput = $("#add-number-input-el");
+
+  // IBAN TABLO
+  const ibanTable = $("#iban-table");
+
+  // IBAN TEXT DOM EL
+  const ibanTextEl = $("#iban");
+
+  const checkInputsField = function () {
+    let customerInputLength = $("#customer-number-input-el").val().length;
+    let addInputLength = $("#add-number-input-el").val().length;
+    if (customerInputLength > 0 && addInputLength > 0) {
+      getIbanButton.removeClass("disabled");
+    } else {
+      getIbanButton.addClass("disabled");
+    }
+  };
+
+  // HESAP NO ALMA
+  customerNumberInput.on("keyup", function () {
+    ibanProps.customerNumber = $(this).val();
+    checkInputsField();
+  });
+
+  addNumberInput.on("keyup", function () {
+    ibanProps.addNumber = $(this).val();
+    checkInputsField();
+  });
+
+  // SORGULA BUTON EVENT
+  getIbanButton.on("click", function () {
+    if (ibanProps.accountId != "") {
+      sendRequesIban(ibanProps);
+    }
+  });
+
+  const sendRequesIban = function (data) {
+    $.ajax({
+      url: `${getIbanApiUrl}?langId=${langId}&language=${language}&customerNo=${data.customerNumber}&addNo=${data.addNumber}`,
+      type: getIbanApiUrlMethod,
+      success: function (result) {
+        ibanTable.removeClass("d-none");
+        ibanTextEl.html(result.iban);
+      },
+    });
+  };
+};
+if (VK.pageHasItem("#iban-interrogation")) {
+  VK.ibanInterrogation();
+}
+
+// DÖVİZ ÇEVİRİCİ
+VK.currencyConverter = function () {
+  let currencyCoverterProps = {
+    amount: "0",
+    InputCurrencyType: "0",
+    convertCurrencyType: "1",
+    langId: langId,
+    language: language,
+  };
+
+  // CURRENCY SELECT
+  const currencySelect = $(".converter-currency-select");
+
+  const converterInputAmount = $("#converter-input-amount");
+  const converterSelectAmount = $("#converter-select-amount");
+
+  const converterInputResult = $("#converter-input-result");
+  const converterSelectResult = $("#converter-select-result");
+
+  const getCurrencyApiUrl = CONFIG.calculate.currency.url;
+  const getCurrencyApiMethod = CONFIG.calculate.currency.method;
+
+  // PARA BİRİMİ DEĞİŞTİĞİNDE DİĞER SELECTİN DEĞİŞMESİ
+  converterSelectResult.on("change", function () {
+    currencyCoverterProps.convertCurrencyType = $(this).val();
+    sendRequesConverter(currencyCoverterProps);
+  });
+
+  const sendRequestCurrency = function (data) {
+    $.ajax({
+      url: `${getCurrencyApiUrl}?langId=${data.langId}&language=${data.language}&currencyTypeId=${data.InputCurrencyType}`,
+      type: getCurrencyApiMethod,
+      success: function (result) {
+        converterSelectResult.empty();
+        for (let i = 0; i < result.currencies.length; i++) {
+          converterSelectResult.append(
+            `<option value="${result.currencies[i].currencyId}">${result.currencies[i].currencyName}</option>`
+          );
+        }
+        converterSelectResult
+          .val(result.currencies[0].currencyId)
+          .trigger("change");
+      },
+    });
+  };
+
+  converterSelectAmount.on("change", function () {
+    currencyCoverterProps.InputCurrencyType = $(this).val();
+    sendRequestCurrency(currencyCoverterProps);
+  });
+
+  converterSelectAmount
+    .val(converterSelectAmount.children().eq(0).val())
+    .trigger("change");
+
+  currencyCoverterProps.amount = converterInputAmount.val();
+
+  $(converterInputAmount).on("keyup", function () {
+    // SET INPUT CURRENCY TYPE
+    currencyCoverterProps.InputCurrencyType = $(converterSelectAmount).val();
+
+    // SET CONVERTED CURRENCY TYPE
+    currencyCoverterProps.convertCurrencyType = $(converterSelectResult).val();
+
+    //SET AMOUNT
+    currencyCoverterProps.amount = $(this).val();
+
+    sendRequesConverter(currencyCoverterProps);
+  });
+
+  // API URL
+  const getConverterApiUrl = CONFIG.calculate.currencyConverter.url;
+
+  // METHOD
+  const getConverterApiUrlMethod = CONFIG.calculate.currencyConverter.method;
+
+  const bankaAlisDomEl = $("#banka-alis");
+  const bankaSatisDomEl = $("#banka-satis");
+
+  const sendRequesConverter = function (data) {
+    const amount = Number(data.amount.replace(/\./g, ""));
+    if (amount > 0)
+      $.ajax({
+        url: `${getConverterApiUrl}?langId=${langId}&language=${language}&amount=${data.amount.replace(
+          /\./g,
+          ""
+        )}&InputCurrencyType=${data.InputCurrencyType}&convertCurrencyType=${
+          data.convertCurrencyType
+        }`,
+        type: getConverterApiUrlMethod,
+        success: function (result) {
+          $(converterInputResult).val(result.bankaSatis);
+          $(bankaAlisDomEl).html(
+            `${result.bankaAlis} ${result.convertedCurrency}`
+          );
+          $(bankaSatisDomEl).html(
+            `${result.bankaSatis} ${result.convertedCurrency}`
+          );
+        },
+      });
+  };
+};
+if (VK.pageHasItem("#currency-converter")) {
+  VK.currencyConverter();
+}
+
+// BUTTON FILTER
+VK.filterButtonToggle = function () {
+  const filterButton = $(".filter-button");
+  filterButton.on("click", function () {
+    filterButton.removeClass("btn-primary").addClass("btn-secondary-outline");
+    $(this).removeClass("btn-secondary-outline").addClass("btn-primary");
+  });
+};
+VK.filterButtonToggle();
+
+VK.filterHtmlButton = function () {
+  const filterHtmlButton = $(".filter-html-button");
+  const filterHtmlItem = $(".filter-html-item");
+  const filterHtmlSection = $(".filter-html-section");
+
+  let selectedCategory;
+  let targetCategoryClass;
+
+  filterHtmlButton.on("click", function () {
+    selectedCategory = $(this).data("category");
+    targetCategoryClass = `.category-${selectedCategory}`;
+    if (selectedCategory === "all") {
+      filterHtmlItem.removeClass("d-none");
+    } else {
+      filterHtmlItem.addClass("d-none");
+      $(targetCategoryClass).removeClass("d-none");
+    }
+    filterHtmlSection.each(function () {
+      let totalItems = $(this).find(".filter-html-item").length;
+      let hiddenItems = $(this).find(".filter-html-item.d-none").length;
+      if (totalItems === hiddenItems) {
+        $(this).addClass("d-none");
+      } else {
+        $(this).removeClass("d-none");
+      }
+    });
+  });
+};
+
+VK.filterHtmlButton();
+
+// PAGINATION
+VK.pagination = function (pageIndex) {
+  let totalPage = $("#pagination-select option").length;
+  let page = pageIndex;
+  let pageViewLimit = PAGE_COUNT;
+  let pageStartPoint = page * pageViewLimit - pageViewLimit;
+  let pageCount = page * pageViewLimit;
+  const paginationItem = $(".pagination-item");
+  paginationItem.removeClass("show-item");
+  for (let i = pageStartPoint; i < pageCount; i++) {
+    paginationItem.eq(i).addClass("show-item");
+  }
+
+  // if ( page  )
+  if (page > 1 && page < totalPage) {
+    $(".pagination-button").removeClass("hidden");
+  }
+  if (page >= totalPage) {
+    $("#pagination-button-prev").removeClass("hidden");
+    $("#pagination-button-next").addClass("hidden");
+  }
+  if (page <= 1) {
+    $("#pagination-button-next").removeClass("hidden");
+    $("#pagination-button-prev").addClass("hidden");
+  }
+};
+
+// PAGINATION HANDLER SELECT
+VK.paginationHandler = function () {
+  const paginationSelect = $("#pagination-select");
+  const paginationPrev = $("#pagination-button-prev");
+  const paginationNext = $("#pagination-button-next");
+  const totalPage = $("#pagination-select option").length;
+
+  VK.nextPage = function () {
+    let currentPage = Number(paginationSelect.val());
+    if (currentPage < totalPage) {
+      currentPage = currentPage + 1;
+      paginationSelect.val(currentPage);
+    }
+    VK.pagination(currentPage);
+  };
+
+  VK.prevPage = function () {
+    let currentPage = Number(paginationSelect.val());
+    if (currentPage > 1) {
+      currentPage = currentPage - 1;
+      paginationSelect.val(currentPage);
+    }
+    VK.pagination(currentPage);
+  };
+
+  $(paginationSelect).on("change", function () {
+    let targetPage = $(this).val();
+    VK.pagination(targetPage);
+  });
+
+  paginationNext.on("click", function () {
+    VK.nextPage();
+  });
+
+  paginationPrev.on("click", function () {
+    VK.prevPage();
+  });
+};
+
+// RESULT VE KATEGORİDEN DÖNEN ELEMANLARA GÖRE SAYFA SAYISI BELİRLEME
+VK.generatePagination = function (pageNumber) {
+  if (pageNumber > 1) {
+    PAGINATION.removeClass("d-none");
+    PAGINATION.html("");
+    PAGINATION.html(
+      '<button type="button" class="pagination-button hidden" id="pagination-button-prev" ><svg class="icon icon-angle-left"><use xlink:href="#icon-angle-left"></use></svg></button><select class="select form-control" id="pagination-select"></select><button type="button" class="pagination-button" id="pagination-button-next" ><svg class="icon icon-angle-right"><use xlink:href="#icon-angle-right"></use></svg></button>'
+    );
+    $("#pagination-select").append(`<option value="1" selected>1</option>`);
+    for (let i = 1; i < pageNumber; i++) {
+      $("#pagination-select").append(
+        `<option value="${i + 1}" >${i + 1}</option>`
+      );
+    }
+    VK.paginationHandler();
+  } else {
+    PAGINATION.addClass("d-none");
+    PAGINATION.html("");
+  }
+};
+
+// PAGINATION SAYFALI CARDLARIN AJAX İLE BASILMASI VE FİLTRELENMESİ
+/* VK.pageWithPaginationLoad = function (dataUrl, method, template, category) {
+  let categoryType = typeof category;
+
+  let totalFilter = 0;
+
+  let pagesCount = 0;
+
+  let renderedElement = 0;
+
+  $.ajax({
+    url: dataUrl,
+    type: method,
+    success: function (result) {
+      $(PAGINATION_PAGE).html("");
+      for (let i = 0; i < result.length; i++) {
+        totalFilter = 0;
+        if (categoryType === "object") {
+          for (let j = 0; j < category.length; j++) {
+            if (result[i].categories.includes(category[j])) {
+              totalFilter = totalFilter + 1;
+            }
+          }
+          if (totalFilter === category.length) {
+            template(result[i]);
+            renderedElement = renderedElement + 1;
+          }
+        } else if (categoryType === "string") {
+          if (result[i].categories.includes(category)) {
+            template(result[i]);
+            renderedElement = renderedElement + 1;
+          }
+        } else {
+          template(result[i]);
+          renderedElement = renderedElement + 1;
+        }
+      }
+      VK.lazyLoadImages();
+      pagesCount = Math.ceil(renderedElement / PAGE_COUNT);
+      VK.generatePagination(pagesCount);
+      VK.pagination(1);
+      if (VK.pageHasItem(".counter")) {
+        VK.counter();
+      }
+    },
+  });
+}; */
+
+/*VK.pageSelectFilters = function (data, method, template) {
+  const pageFilerSelects = $("#page-filter-selects .select");
+  let filterProps;
+  $(pageFilerSelects).on("change", function () {
+    filterProps = [];
+    pageFilerSelects.forEach(function (item) {
+      if (item.value != "all") {
+        filterProps.push(item.value);
+      }
+    });
+    VK.pageWithPaginationLoad(data, method, template, filterProps);
+  });
+};*/
+
+// KURLAR TABLOSU
+VK.exchageRates = function (tableBody, api, url, type) {
+  let statusIcon;
+  let status;
+
+  $.ajax({
+    url: url,
+    type: api.method,
+    success: function (result) {
+      for (let i = 0; i < result.length; i++) {
+        if (result[i].rate != undefined) {
+          if (result[i].rate[0] === false) {
+            statusIcon = `<svg class="icon icon-caret-down"><use xlink:href="#icon-caret-down"></use></svg>`;
+            status = "down";
+          } else if (result[i].rate[0] === true) {
+            statusIcon = `<svg class="icon icon-caret-up"><use xlink:href="#icon-caret-up"></use></svg>`;
+            status = "up";
+          } else {
+            statusIcon = `<span class="rate-status-none-icon"></span>`;
+            status = "line";
+          }
+        }
+        if (type === undefined) {
+          $(tableBody).append(
+            `<tr><th><div class="currency-table-title"> <figure class="currency-table-image"> <img class="lazy entered loaded" data-src="assets/img/currency-icons/${result[i].currencyCode}.svg" alt="" data-ll-status="loaded" src="assets/img/currency-icons/${result[i].currencyCode}.svg"> </figure><div class="currency-table-content"> <span class="currency-table-type">${result[i].currencyCode}</span> <span class="d-none d-lg-inline">-</span> <span class="currency-table-name">${result[i].currencyName}</span></div></div></th><td>${result[i].buyRate}</td><td>${result[i].sellRate}</td><td><div class="currency-rate-status status-${status}"> ${statusIcon} <span class="currency-rate-status-value">${result[i].rate[1]}</span></div></td></tr>`
+          );
+        }
+      }
+      if (type === "compact") {
+        let homeExchange = result.homeExchange;
+        for (let homeExchangeItem of homeExchange) {
+          if (homeExchangeItem != undefined) {
+            if (homeExchangeItem.rate === false) {
+              statusIcon = `<svg class="icon icon-caret-down"><use xlink:href="#icon-caret-down"></use></svg>`;
+              status = "down";
+            } else if (homeExchangeItem.rate === true) {
+              statusIcon = `<svg class="icon icon-caret-up"><use xlink:href="#icon-caret-up"></use></svg>`;
+              status = "up";
+            } else {
+              statusIcon = `<span class="rate-status-none-icon"></span>`;
+              status = "line";
+            }
+          }
+
+          $(tableBody).append(
+            `<tr><th><div class="currency-rate-status status-${status}"><span class="currency-rate-status-title">${homeExchangeItem.currencyCode}</span>${statusIcon}</div></th><td>${homeExchangeItem.buyRate}</td><td>${homeExchangeItem.sellRate}</td></tr>`
+          );
+        }
+
+        $("#tab-kurlar-desc").append(`${result.description}`);
+      }
+      if (type === "dividend") {
+        let dividendRates = result.dividendRates;
+        for (let dividendRatesItem of dividendRates) {
+          $(tableBody).append(
+            `<tr><th>${dividendRatesItem.expiry}</th><td>${dividendRatesItem.tl}</td><td>${dividendRatesItem.usd}</td><td>${dividendRatesItem.eur}</td></tr>`
+          );
+        }
+        $("#tab-karpayi-desc").append(`${result.description}`);
+      }
+    },
+  });
+};
+
+if (VK.pageHasItem("#home-exchange-rates-table-body")) {
+  VK.exchageRates(
+    "#home-exchange-rates-table-body",
+    CONFIG.rates.homeExchangeRates,
+    CONFIG.rates.homeExchangeRates.url +
+      `?langId=${langId}&language=${language}`,
+    "compact"
+  );
+}
+
+if (VK.pageHasItem("#home-dividend-rates-table-body")) {
+  VK.exchageRates(
+    "#home-dividend-rates-table-body",
+    CONFIG.rates.dividendRates,
+    CONFIG.rates.dividendRates.url + `?langId=${langId}&language=${language}`,
+    "dividend"
+  );
+}
+
+// TÜM İLÇELER AJAX ÇAĞRISI
+VK.districtSelect = function () {
+  let locationProps = {
+    cityId: "0",
+    districtId: "0",
+    langId: langId,
+    language: language,
+  };
+
+  const selectCity = $("#select-city");
+  const selectDistrict = $("#select-district");
+
+  const getLocationDistrictApiUrl = CONFIG.locations.district.url;
+  const getLocationDistrictApiMethod = CONFIG.locations.district.method;
+
+  const sendRequestDistrict = function (data) {
+    $.ajax({
+      url: `${getLocationDistrictApiUrl}?langId=${data.langId}&language=${data.language}&cityId=${data.cityId}`,
+      type: getLocationDistrictApiMethod,
+      success: function (result) {
+        let allItems = selectDistrict.children("option:enabled").eq(0);
+        selectDistrict.empty();
+        selectDistrict.removeClass("disabled");
+        selectDistrict.append(allItems);
+
+        for (let i = 0; i < result.districts.length; i++) {
+          selectDistrict.append(
+            `<option value="${result.districts[i].districtId}">${result.districts[i].districtName}</option>`
+          );
+        }
+      },
+    });
+  };
+
+  selectCity.on("change", function () {
+    locationProps.cityId = $(this).val();
+    sendRequestDistrict(locationProps);
+  });
+};
+
+const branchSelectInput = $("#select-branch");
+const districtSelectInput = $("#select-district");
+if ($(branchSelectInput).length < 1 && $(districtSelectInput).length >= 1)
+  VK.districtSelect();
+
+// GAYRİMENKUL İLÇELER İÇİN AJAX ÇAĞRISI
+VK.realEstateDistrictSelect = function () {
+  let locationProps = {
+    cityId: "0",
+    districtId: "0",
+    langId: langId,
+    language: language,
+  };
+
+  const selectCity = $("#select-realestate-city");
+  const selectRealEstateDistrict = $("#select-realestate-district");
+
+  const getRealEstateDistrictApiUrl = CONFIG.realEstate.district.url;
+  const getRealEstateDistrictApiMethod = CONFIG.realEstate.district.method;
+
+  const sendRequestDistrict = function (data) {
+    $.ajax({
+      url: `${getRealEstateDistrictApiUrl}?langId=${data.langId}&language=${data.language}&cityId=${data.cityId}`,
+      type: getRealEstateDistrictApiMethod,
+      success: function (result) {
+        let allItems = selectRealEstateDistrict.children("option").eq(0);
+        selectRealEstateDistrict.empty();
+        selectRealEstateDistrict.removeClass("disabled");
+        selectRealEstateDistrict.append(allItems);
+        for (let i = 0; i < result.districts.length; i++) {
+          selectRealEstateDistrict.append(
+            `<option value="${result.districts[i].districtId}">${result.districts[i].districtName}</option>`
+          );
+        }
+      },
+    });
+  };
+
+  selectCity.on("change", function () {
+    locationProps.cityId = $(this).val();
+    sendRequestDistrict(locationProps);
+  });
+};
+VK.realEstateDistrictSelect();
+
+// ŞUBE SEÇİMİ İÇİN AJAX ÇAĞRISI
+VK.branchSelect = function () {
+  let locationProps = {
+    cityId: null,
+    districtId: null,
+    branchId: null,
+    langId: langId,
+    language: language,
+  };
+
+  const selectCity = $("#select-city");
+  const cityName = $("#city-name");
+  const selectDistrict = $("#select-district");
+  const districtName = $("#district-name");
+    const selectBranch = $("#select-branch");
+    const onlySelectBranch = $("#only-select-branch").val();
+  const branchMail = $("#branch-mail");
+  const branchName = $("#branch-name");
+  const branchCode = $("#branch-code");
+  let formData = {};
+  if ($("#form-data").length > 0) formData = JSON.parse($("#form-data").val());
+
+  const getMapCitiesApiUrl = CONFIG.locations.cities.url;
+  const getMapCitiesApiMethod = CONFIG.locations.cities.method;
+
+  const getMapDistrictApiUrl = CONFIG.locations.district.url;
+  const getMapDistrictApiMethod = CONFIG.locations.district.method;
+
+  const getMapBranchApiUrl = CONFIG.locations.branch.url;
+  const getMapBranchApiMethod = CONFIG.locations.branch.method;
+
+  let branchInformations = [];
+
+  const sendRequestCities = function (data) {
+    $.ajax({
+        url: `${getMapCitiesApiUrl}?langId=${langId}&language=${language}&cityId=${data.cityId}&districtId=${data.districtId}&branchId=${data.branchId}`,
+      type: getMapCitiesApiMethod,
+      success: function (result) {
+        selectCity.removeClass("disabled");
+        for (let i = 0; i < result.cities.length; i++) {
+          selectCity.append(
+            `<option value="${result.cities[i].cityId}">${result.cities[i].cityName}</option>`
+          );
+        }
+        setSelectValueFromFormData("CityId", selectCity);
+      },
+    });
+  };
+
+  const sendRequestDistrict = function (data) {
+    $.ajax({
+      url: `${getMapDistrictApiUrl}?langId=${langId}&language=${language}&cityId=${data.cityId}&districtId=${data.districtId}&branchId=${data.branchId}`,
+      type: getMapDistrictApiMethod,
+      success: function (result) {
+        let allItems = selectDistrict.children("option").eq(0);
+        selectDistrict.empty();
+        selectDistrict.removeClass("disabled");
+        selectDistrict.append(allItems);
+        for (let i = 0; i < result.districts.length; i++) {
+          selectDistrict.append(
+            `<option value="${result.districts[i].districtId}">${result.districts[i].districtName}</option>`
+          );
+        }
+        setSelectValueFromFormData("DistrictId", selectDistrict);
+      },
+    });
+  };
+
+  const sendRequestBranch = function (data) {
+    $.ajax({
+        url: `${getMapBranchApiUrl}?langId=${langId}&language=${language}&cityId=${data.cityId}&districtId=${data.districtId}&branchId=${data.branchId}&isOnlyBranch=${onlySelectBranch}`,
+      type: getMapBranchApiMethod,
+      success: function (result) {
+        selectBranch.removeClass("disabled");
+        selectBranch.empty();
+        branchInformations = result.information;
+        for (let i = 0; i < result.information.length; i++) {
+          selectBranch.append(
+            `<option value="${result.information[i].branchCode}">${result.information[i].branchType}</option>`
+          );
+        }
+
+        if (branchInformations.length > 0)
+          selectBranch.val(branchInformations[0].branchCode).trigger("change");
+
+        setSelectValueFromFormData("BranchId", selectBranch);
+      },
+    });
+  };
+
+  const setSelectValueFromFormData = function (key, select) {
+    if (formData.hasOwnProperty(key) && select.find("option").length > 1) {
+      select.val(formData[key]).trigger("change");
+    }
+  };
+
+  sendRequestCities(locationProps);
+
+  selectCity.on("change", function () {
+    locationProps.cityId = $(this).val();
+    let cityText = $(this).children("option:selected").text();
+    cityName.val(cityText);
+    sendRequestDistrict(locationProps);
+    if (!$(selectBranch).hasClass("disabled")) {
+      selectBranch.empty();
+    }
+  });
+  selectDistrict.on("change", function () {
+    locationProps.districtId = $(this).val();
+    let districtText = $(this).children("option:selected").text();
+    districtName.val(districtText);
+    sendRequestBranch(locationProps);
+  });
+  selectBranch.on("change", function () {
+    let selectedBranch = $(this).val();
+    let branchText = $(this).children("option:selected").text();
+    let branchCodeValue = $(this).children("option:selected").val();
+    branchName.val(branchText);
+    branchCode.val(branchCodeValue);
+    branchMail.val(
+      branchInformations.filter((item) => item.branchCode == selectedBranch)[0]
+        .email
+    );
+  });
+};
+
+if ($(branchSelectInput).length >= 1) VK.branchSelect();
+
+// HARİTA ŞUBE SEÇİMİ İÇİN AJAX ÇAĞRISI
+VK.maps = function () {
+  let locationProps = {
+    cityId: "0",
+    districtId: "0",
+    langId: langId,
+    language: language,
+    isHandicappedAtm: false,
+  };
+  const getMapCityApiUrl = CONFIG.map.city.url;
+  const getMapCityApiMethod = CONFIG.map.city.method;
+  const getMapDistrictApiUrl = CONFIG.map.district.url;
+  const getMapDistrictApiMethod = CONFIG.map.district.method;
+  const getMapInformationsApiUrl = CONFIG.map.mapInformations.url;
+  const getMapInformationsApiMethod = CONFIG.map.mapInformations.method;
+
+  const mapSelectCity = $("#select-city-map");
+
+  const selectDistrict = $("#select-district-map");
+
+  const mapListBox = $("#map-list-box");
+
+  const mapCard = $(".map-card");
+
+  const mapSearchInput = $("#map-search-input");
+
+  const subeCheckbox = $("#sube-checkbox");
+
+  const atmCheckbox = $("#atm-checkbox");
+
+  const subeAtmCheckbox = $(".sube-atm-checkbox");
+
+  const otherFilterCheckbox = $(".other-filter-checkbox");
+
+  const handicappedFilterCheckbox = $("#handicapped-filter");
+
+  const blindFilterCheckbox = $("#blind-filter");
+
+  var letters = {
+    İ: "i",
+    I: "ı",
+    Ş: "ş",
+    Ğ: "ğ",
+    Ü: "ü",
+    Ö: "ö",
+    Ç: "ç",
+  };
+
+  let mapsProps = {
+    cityId: "34",
+    districtId: "25",
+    branchCode: "10",
+    slug: "sube",
+    handicappedFilter: false,
+    blindFilter: false,
+    searchKey: "",
+    langId: langId,
+    language: language,
+  };
+
+  const sendRequestMapCity = function (data) {
+    $.ajax({
+      url: `${getMapCityApiUrl}?langId=${data.langId}&language=${data.language}&cityId=${data.cityId}&isHandicappedAtm=${data.isHandicappedAtm}`,
+      type: getMapCityApiMethod,
+      success: function (result) {
+        let allItems = mapSelectCity.children("option").eq(0);
+        mapSelectCity.empty();
+        mapSelectCity.removeClass("disabled");
+        mapSelectCity.append(allItems);
+
+        for (let i = 0; i < result.cities.length; i++) {
+          mapSelectCity.append(
+            `<option value="${result.cities[i].cityId}">${result.cities[i].cityName}</option>`
+          );
+        }
+        mapSelectCity.val(result.cities[0].cityId).trigger("change");
+      },
+    });
+  };
+  const sendRequestDistrict = function (data) {
+    $.ajax({
+      url: `${getMapDistrictApiUrl}?langId=${data.langId}&language=${data.language}&cityId=${data.cityId}&isHandicappedAtm=${data.isHandicappedAtm}`,
+      type: getMapDistrictApiMethod,
+      success: function (result) {
+        let allItems = selectDistrict.children("option:enabled").eq(0);
+        selectDistrict.empty();
+        selectDistrict.removeClass("disabled");
+        selectDistrict.append(allItems);
+
+        for (let i = 0; i < result.districts.length; i++) {
+          selectDistrict.append(
+            `<option value="${result.districts[i].districtId}">${result.districts[i].districtName}</option>`
+          );
+        }
+
+        selectDistrict.val(result.districts[0].districtId).trigger("change");
+      },
+    });
+  };
+
+  // ŞUBE VEYA ATM SEÇİMİNE GÖRE SLUG BELİRLEME
+  let slugVal = "sube-ve-atm";
+  const checkBranchSearchType = function () {
+    let isSubeChecked = subeCheckbox.is(":checked");
+    let atmSubeChecked = atmCheckbox.is(":checked");
+
+    if (isSubeChecked === true && atmSubeChecked === false) {
+      slugVal = "sube";
+    } else if (isSubeChecked === false && atmSubeChecked === true) {
+      slugVal = "atm";
+    } else if (isSubeChecked === true && atmSubeChecked === true) {
+      slugVal = "sube-ve-atm";
+    }
+
+    if (atmSubeChecked !== true) {
+      mapsProps.handicappedFilter = "";
+      mapsProps.blindFilter = "";
+      $("#other-map-filters").removeClass("active");
+      $("#other-map-filters-handler").removeClass("active");
+      $(otherFilterCheckbox).prop("checked", false);
+    }
+    mapsProps.slug = slugVal;
+  };
+
+  // ŞEHİR SEÇİLDİĞİNDE
+  mapSelectCity.on("change", function () {
+    mapsProps.cityId = $(this).val();
+    mapsProps.districtId = 0;
+    mapsProps.branchCode = 0;
+    mapSearchInput.val("");
+    mapsProps.searchKey = "";
+    locationProps.cityId = $(this).val();
+    sendRequestDistrict(locationProps);
+    //sendRequestMapList(mapsProps);
+  });
+
+  // İLÇE SEÇİLDİĞİNDE
+  selectDistrict.on("change", function () {
+    mapsProps.districtId = $(this).val();
+    mapsProps.branchCode = 0;
+    mapSearchInput.val("");
+    mapsProps.searchKey = "";
+    sendRequestMapList(mapsProps);
+  });
+
+  // SEARCH ALANINA YAZILDIĞINDA
+  mapSearchInput.on("keyup", function () {
+    mapsProps.searchKey = $(this)
+      .val()
+      .replace(/(([İIŞĞÜÇÖ]))/g, function (letter) {
+        return letters[letter];
+      })
+      .toLowerCase();
+    mapSelectCity.val(0);
+    mapsProps.cityId = null;
+    selectDistrict.val(0);
+    mapsProps.branchCode = null;
+    selectDistrict.addClass("disabled");
+    mapsProps.districtId = null;
+    sendRequestMapList(mapsProps);
+  });
+
+  // ATM CHECKBOX TIKLADIĞINDA FİLTER BUTONUNU GÖSTERİP GİZLEME
+  if (atmCheckbox[0].checked) {
+    $("#other-map-filters-handler").removeClass("d-none");
+    checkBranchSearchType();
+  }
+  atmCheckbox.on("click", function () {
+    $("#other-map-filters-handler").toggleClass("d-none");
+    checkBranchSearchType();
+  });
+
+  subeAtmCheckbox.on("change", function () {
+    checkBranchSearchType();
+    sendRequestMapList(mapsProps);
+  });
+
+  handicappedFilterCheckbox.on("change", function () {
+    mapsProps.handicappedFilter = this.checked;
+    locationProps.isHandicappedAtm = this.checked;
+    //sendRequestMapList(mapsProps);
+    sendRequestMapCity(locationProps);
+  });
+
+  blindFilterCheckbox.on("change", function () {
+    mapsProps.blindFilter = this.checked;
+    sendRequestMapList(mapsProps);
+  });
+
+  // MAP LIST CARD SEÇİLDİĞİNDE BRANCH ID GÜNCELLEME
+  $(document).on("click", ".map-card", function () {
+    if ($(this).hasClass("active")) {
+      $(this).removeClass("active");
+    } else {
+      $(".map-list-item > .map-card").removeClass("active");
+      $(this).addClass("active");
+      mapsProps.branchCode = $(this).data("id");
+    }
+  });
+
+  const sendRequestMapList = function (data) {
+    let searchKeyWord = "";
+    let filterKeyWord = "";
+
+    if (data.searchKey !== "") {
+      searchKeyWord = `searchKey=${data.searchKey}`;
+    }
+
+    if (data.handicappedFilter !== "" || data.blindFilter !== "") {
+      filterKeyWord = `&handicappedFilter=${data.handicappedFilter}&blindFilter=${data.blindFilter}`;
+    }
+
+    if (data.slug === undefined) {
+      data.slug = "sube-ve-atm";
+    }
+
+    $.ajax({
+      url: `${getMapInformationsApiUrl}?langId=${langId}&language=${language}&${searchKeyWord}&cityId=${data.cityId}&districtId=${data.districtId}&slug=${data.slug}${filterKeyWord}&branchId=${data.branchCode}`,
+      type: getMapInformationsApiMethod,
+      success: function (result) {
+        mapListBox.html("");
+        let isHandicappedIcon = "";
+        let isBlindIcon = "";
+        let mapListItem;
+        for (let i = 0; i < result.information.length; i++) {
+          if (result.information[i].isHandicapped === true) {
+            isHandicappedIcon = `<svg class="icon icon-disabled"><use xlink:href="#icon-disabled"></use></svg>`;
+          } else {
+            isHandicappedIcon = "";
+          }
+          if (result.information[i].isBlind === true) {
+            isBlindIcon = `<svg class="icon icon-eye-off"><use xlink:href="#icon-eye-off"></use></svg>`;
+          } else {
+            isBlindIcon = "";
+          }
+
+          if (result.information[i].type != true) {
+            mapListItem = `<div class="map-list-item" ><div class="map-card" data-id="${result.information[i].branchCode}" data-coordinate="${result.information[i].latitude},${result.information[i].longitude}"><svg class="icon icon-angle-down"><use xlink:href="#icon-angle-down"></use></svg><h5>${result.information[i].branchType}</h5><address>${result.information[i].address}</address><div class="map-card-default-show"><button type="button" class="btn btn-link btn-block">${result.translations.more}</button><div class="map-card-feature-icons">${isHandicappedIcon}${isBlindIcon}</div></div><div class="map-card-active-show"><div class="map-card-info-box mb-0"><div class="map-card-info-item"><h6>${result.translations.phone}</h6><a href="tel:${result.information[i].phone}">${result.information[i].phone}</a></div><div class="map-card-info-item"><h6>${result.translations.fax}</h6><a href="tel:${result.information[i].fax}">${result.information[i].fax}</a></div></div><div class="map-card-info-item w-100"> <h6>${result.translations.mail}</h6> <a href="mailto:${result.information[i].email}">${result.information[i].email}</a> </div> <div class="map-card-info-item"> <h6>${result.translations.branchCode}</h6> <div>${result.information[i].branchCode}</div> </div><a href="https://maps.google.com/maps?ll=${result.information[i].latitude},${result.information[i].longitude}&amp;z=18&amp;t=m&amp;hl=tr&amp;gl=US&amp;mapclient=embed&amp;daddr=@${result.information[i].latitude},${result.information[i].longitude}" target="_blank" class="btn btn-primary">${result.translations.getDirections}</a></div></div><div class="map-wrapper mobile-map-wrapper"></div></div>`;
+          } else {
+            mapListItem = `<div class="map-list-item" ><div class="map-card" data-id="${result.information[i].branchCode}" data-coordinate="${result.information[i].latitude},${result.information[i].longitude}"><svg class="icon icon-angle-down"><use xlink:href="#icon-angle-down"></use></svg><h5>${result.information[i].branchType}</h5><address>${result.information[i].address}</address><div class="map-card-feature-icons">${isHandicappedIcon}${isBlindIcon}</div></div><div class="map-card-active-show"><div class="map-card-info-box mb-0"><div class="map-card-info-item"><h6>${result.translations.phone}</h6><a href="tel:${result.information[i].phone}">${result.information[i].phone}</a></div><div class="map-card-info-item"><h6>${result.translations.fax}</h6><a href="tel:${result.information[i].fax}">${result.information[i].fax}</a></div></div><div class="map-card-info-item w-100"> <h6>${result.translations.mail}</h6> <a href="mailto:${result.information[i].email}">${result.information[i].email}</a> </div> <div class="map-card-info-item"> <h6>${result.translations.branchCode}</h6> <div>${result.information[i].branchCode}</div> </div><a href="https://maps.google.com/maps?ll=${result.information[i].latitude},${result.information[i].longitude}&amp;z=18&amp;t=m&amp;hl=tr&amp;gl=US&amp;mapclient=embed&amp;daddr=@${result.information[i].latitude},${result.information[i].longitude}" target="_blank" class="btn btn-primary d-none">${result.translations.getDirections}</a></div></div><div class="map-wrapper mobile-map-wrapper"></div></div>`;
+          }
+          mapListBox.append(mapListItem);
+        }
+      },
+    });
+  };
+
+  sendRequestMapCity(locationProps);
+};
+
+if (VK.pageHasItem(".map-control-side")) {
+  const t = VK.maps();
+}
+
+VK.loadMore = function () {
+  const loadMoreItems = $(".load-more-item");
+  const loadMoreItemsLength = loadMoreItems.length;
+  const loadMoreButton = $("#load-more-button");
+
+  if (loadMoreItemsLength > 10) {
+    loadMoreButton.addClass("d-flex");
+  }
+
+  let loadCount = 10;
+  let loadedItem = 0;
+  const loadMoreItem = function () {
+    for (let i = loadedItem; i < loadCount; i++) {
+      loadMoreItems.eq(i).addClass("d-block");
+      loadedItem = loadedItem + 1;
+    }
+    loadCount = loadCount + loadedItem;
+    if (loadedItem >= loadMoreItemsLength) {
+      loadMoreButton.remove();
+    }
+  };
+
+  loadMoreItem();
+
+  loadMoreButton.on("click", function () {
+    loadMoreItem();
+  });
+};
+
+if (VK.pageHasItem("#load-more-container")) {
+  VK.loadMore();
+}
+
+VK.realEstateSlider = function () {
+  const realEstateSliderThumb = $("#realestate-slider-thumbs a");
+
+  const sliderItemsLength = $("#realestate-glider .glide__slide").length;
+
+  $("#sw-total-index").html(sliderItemsLength);
+
+  var realEstateGlider = new Glide("#realestate-glider", {
+    rewind: true,
+    animationDuration: 0,
+    rewindDuration: 0,
+    dragThreshold: 0,
+    swipeThreshold: 10,
+    breakpoints: {
+      992: {
+        rewind: false,
+        animationDuration: 300,
+        rewindDuration: 300,
+      },
+    },
+  });
+
+  $("#realestate-slider").on("click", function () {
+    realEstateGlider.go(">");
+  });
+
+  realEstateGlider.on(["mount.after", "run"], function () {
+    $("#sw-current-index").html(realEstateGlider.index + 1);
+    realEstateSliderThumb.removeClass("active");
+    realEstateSliderThumb.eq(realEstateGlider.index).addClass("active");
+  });
+
+  realEstateGlider.mount();
+  realEstateSliderThumb.on("click", function (e) {
+    e.preventDefault();
+    let thumbIndex = $(this).index();
+    realEstateSliderThumb.removeClass("active");
+    $(this).addClass("active");
+    realEstateGlider.go(`=${thumbIndex}`);
+  });
+};
+if (VK.pageHasItem("#realestate-slider")) {
+  VK.realEstateSlider();
+}
+
+VK.realEstateTabs = function () {
+  if (pageIsMobile) {
+    $("#realestate-tabs .tab-button").eq(0).addClass("active");
+    $("#realestate-tabs .tab-section").eq(0).addClass("active");
+  } else {
+    $("#realestate-tabs .tab-button").eq(1).addClass("active");
+    $("#realestate-tabs .tab-section").eq(1).addClass("active");
+  }
+};
+if (VK.pageHasItem("#realestate-tabs")) {
+  VK.realEstateTabs();
+}
+
+VK.counter = function () {
+  var counterCollection = $(".counter");
+
+  function setCount(date, item) {
+    var countDownDate = new Date(date).getTime();
+
+    var x = setInterval(function () {
+      var now = new Date().getTime();
+      var distance = countDownDate - now;
+      var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      var hours = Math.floor(
+        (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      );
+      var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      // var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+      // var result = days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's ';
+
+      item.find("[count-type=day] strong").text(days);
+      item.find("[count-type=hour] strong").text(hours);
+      item.find("[count-type=minute] strong").text(minutes);
+
+      if (distance < 0) {
+        clearInterval(x);
+      }
+    }, 1000);
+  }
+
+  for (var i = 0; i < counterCollection.length; i++) {
+    var item = $(counterCollection[i]);
+    var date = item.data("date");
+
+    setCount(date, item);
+  }
+};
+
+if (VK.pageHasItem(".counter")) {
+  VK.counter();
+}
+
+VK.realEstate = function () {
+  const realEstateItemTemplate = function (result) {
+    $(PAGINATION_PAGE).append(
+      `
+        <div class="col-md-6 col-lg-12 pagination-item show-item">
+      <div class="card card-block-view">
+      <a href="detay/${result.url}">
+        <div class="card-picture card-picture-md">
+          <img class="just-ie11" src="${result.image}.jpg" alt="">
+          <picture>
+              <source type="image/webp" srcset="${result.image}.webp 1x" data-srcset="${result.image}.webp 1x, ${result.image}@2x.webp 2x"
+                  srcset="${result.image}.webp 1x, ${result.image}@2x.webp 2x">
+              <img alt="" class="lazy entered loaded" src="${result.image}.jpg"
+                  data-srcset="${result.image}.jpg 1x, ${result.image}@2x.jpg 2x" data-ll-status="loaded"
+                  srcset="${result.image}.jpg 1x, ${result.image}@2x.jpg 2x">
+          </picture>
+        </div>
+      </a>
+      <div class="card-body">
+        <div class="card-content">
+            <h6 class="sub-title">Başlangıç Fiyatı</h6>
+            <h4>${result.startingPrice}</h4>
+            <h6 class="card-title">${result.title}</h6>
+            <address>${result.address}</address>
+            <ul class="inline-dot-list">
+                <li>${result.type}</li>
+                <li>${result.size}m<sup>2</sup> (Brüt)</li>
+            </ul>
+            <ul class="inline-dot-list-desktop">
+                <li>
+                    Kalan Süre:
+                    <div class="counter" data-date="${result.endDate}">
+                        <div class="counter-item" count-type="day">
+                            <strong>0</strong>
+                            <span>g</span>
+                        </div>
+                        <div class="counter-item" count-type="hour">
+                            <strong>0</strong>
+                            <span>s</span>
+                        </div>
+                        <div class="counter-item" count-type="minute">
+                            <strong>0</strong>
+                            <span>dk</span>
+                        </div>
+                    </div>
+                </li>
+                <li>Bitiş Tarihi: <b>${result.endDateText}</b></li>
+            </ul>
+        </div>
+        <div class="card-bottom">
+            <a href="teklif-formu/${result.url}" class="btn btn-sm btn-primary">Teklif Ver</a>
+            <a href="detay/${result.url}" class="btn btn-sm btn-primary-outline">Detay Gör</a>
+        </div>
+        </div>
+      </div>
+      </div>
+      `
+    );
+  };
+
+  let realestateFilterProps = {
+    cityId: "",
+    districtId: "",
+    type: "",
+    minPrice: "",
+    maxPrice: "",
+    pageItemSize: pageProps.pageItemSize,
+    page: pageProps.page,
+  };
+  const filterButton = $("#realestate-filter-button");
+
+  // SELECTS
+  const realestateSelectCity = $("#realestate-filter #select-realestate-city");
+  const realestateSelectDistrict = $(
+    "#realestate-filter #select-realestate-district"
+  );
+  const realestateSelectType = $("#realestate-type-select");
+  const realestateInputMin = $("#realestate-min-price-input");
+  const realestateInputMax = $("#realestate-max-price-input");
+
+  const filterActive = function () {
+    filterButton.removeClass("disabled");
+  };
+
+  realestateSelectCity.on("change", function () {
+    realestateFilterProps.cityId = $(this).val();
+    filterActive();
+  });
+
+  realestateSelectDistrict.on("change", function () {
+    realestateFilterProps.districtId = $(this).val();
+  });
+
+  realestateSelectType.on("change", function () {
+    realestateFilterProps.type = $(this).val();
+    filterActive();
+  });
+
+  realestateInputMin.on("keyup", function () {
+    realestateFilterProps.minPrice = $(this).val();
+    filterActive();
+  });
+
+  realestateInputMax.on("keyup", function () {
+    realestateFilterProps.maxPrice = $(this).val();
+    filterActive();
+  });
+
+  filterButton.on("click", function () {
+    let cityIdKey = "";
+    if (realestateFilterProps.cityId != "") {
+      cityIdKey = `cityId=${realestateFilterProps.cityId}`;
+    }
+
+    let districtIdKey = "";
+    if (realestateFilterProps.districtId != "") {
+      districtIdKey = `&districtId=${realestateFilterProps.districtId}`;
+    }
+
+    let typeKey = "";
+    if (realestateFilterProps.type != "") {
+      typeKey = `&type=${realestateFilterProps.type}`;
+    }
+
+    let minPriceKey = "";
+    if (realestateFilterProps.minPrice != "") {
+      minPriceKey = `&minPrice=${realestateFilterProps.minPrice}`;
+    }
+
+    let maxPriceKey = "";
+    if (realestateFilterProps.maxPrice != "") {
+      maxPriceKey = `&maxPrice=${realestateFilterProps.maxPrice}`;
+    }
+
+    realestateFilterProps.updated = true;
+    realestateFilterProps.page = 1;
+
+    VK.paginationPage(
+      pageDataUrl,
+      pageDataMethod,
+      itemTemplate,
+      realestateFilterProps
+    );
+  });
+};
+
+if (VK.pageHasItem("#realestate-filter")) {
+  VK.realEstate();
+}
+
+VK.switchCheckbox = function () {
+  const switchCheckboxItem = $(".switch input");
+  switchCheckboxItem.on("change", function () {
+    let targetToggleView = $(this)
+      .parents(".switch-checkbox")
+      .data("toggle-view");
+    const isMultiContent = $(this)
+      .parents(".switch-checkbox")
+      .hasClass("multi-content");
+    if (isMultiContent) {
+      $(targetToggleView).children().addClass("d-none");
+      if ($(this).is(":checked")) {
+        $(targetToggleView).children().eq(0).removeClass("d-none");
+      } else {
+        $(targetToggleView).children().eq(1).removeClass("d-none");
+      }
+    } else {
+      if ($(this).is(":checked")) {
+        $(targetToggleView).removeClass("d-none");
+        $(targetToggleView).addClass("d-block");
+      } else {
+        $(targetToggleView).removeClass("d-block");
+        $(targetToggleView).addClass("d-none");
+      }
+    }
+  });
+};
+VK.switchCheckbox();
+
+// OVERLAY ON CLICK
+VK.overlayCallback = function () {
+  overlay.on("click", function () {
+    VK.hideMenuDetail();
+    VK.hideOverlay();
+  });
+};
+VK.overlayCallback();
+
+// WINDOW SCROLL EVENT
+window.onscroll = function () {
+  if (pageHasAnchorMenu === true) {
+    VK.addClassOnScroll(anchorMenu, "fixed", anchorMenuPositonTop);
+  } else {
+    VK.addClassOnScroll(header, "fixed-header", 180);
+  }
+};
+
+VK.tcknValidation = function (tc) {
+  tc = tc.toString();
+  if (tc.substring(0, 1) === "0") {
+    return false;
+  }
+  var isEleven = /^[0-9]{11}$/.test(tc);
+  var total = 0;
+  for (var i = 0; i < 10; i++) {
+    total += Number(tc.substr(i, 1));
+  }
+  var isRule = total % 10 == tc.substr(10, 1);
+  var totalY1 = 0;
+  var totalY2 = 0;
+  for (var i = 0; i < 10; i += 2) {
+    totalY1 += Number(tc.substr(i, 1));
+  }
+  for (var i = 1; i < 10; i += 2) {
+    totalY2 += Number(tc.substr(i, 1));
+  }
+  var isRuleY = (totalY1 * 7 - totalY2) % 10 == tc.substr(9, 0);
+  return isEleven && isRule && isRuleY;
+};
+
+VK.vknValidation = function (kno) {
+  if (kno.length === 10) {
+    let v = [];
+    let lastDigit = Number(kno.charAt(9));
+    for (let i = 0; i < 9; i++) {
+      let tmp = (Number(kno.charAt(i)) + (9 - i)) % 10;
+      v[i] = (tmp * 2 ** (9 - i)) % 9;
+      if (tmp !== 0 && v[i] === 0) v[i] = 9;
+    }
+    let sum = v.reduce((a, b) => a + b, 0) % 10;
+    return (10 - (sum % 10)) % 10 === lastDigit;
+  }
+
+  if (kno.length === 11) {
+    kno = kno.toString();
+    if (kno.substring(0, 1) === "0") {
+      return false;
+    }
+    var isEleven = /^[0-9]{11}$/.test(kno);
+    var total = 0;
+    for (var i = 0; i < 10; i++) {
+      total += Number(kno.substr(i, 1));
+    }
+    var isRule = total % 10 == kno.substr(10, 1);
+    var totalY1 = 0;
+    var totalY2 = 0;
+    for (var i = 0; i < 10; i += 2) {
+      totalY1 += Number(kno.substr(i, 1));
+    }
+    for (var i = 1; i < 10; i += 2) {
+      totalY2 += Number(kno.substr(i, 1));
+    }
+    var isRuleY = (totalY1 * 7 - totalY2) % 10 == kno.substr(9, 0);
+    return isEleven && isRule && isRuleY;
+  }
+  return false;
+};
+
+VK.emailValidation = function (email) {
+  const re =
+    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  return re.test(String(email).toLowerCase());
+};
+
+VK.validPhoneNumber = function (phone) {
+  const re =
+    /^([\(]{1}[0-9]{3}[\ )]{1}[/ ]{1}[0-9]{3}[\ ]{1}[0-9]{2}[\ ]{1}[0-9]{2})$/;
+  return re.test(phone);
+};
+
+VK.validAdvancePayment = function (advancePayment, price) {
+  return (
+    Number(advancePayment.split(".").join("")) <
+    Number(price.split(".").join(""))
+  );
+};
+
+VK.validPrice = function (price) {
+  return price.length >= 4;
+};
+
+VK.captcha = function () {
+  let i = 1;
+  $("#refresh").on("click", function () {
+    i++;
+    $("#imgCaptcha2").attr(
+      "src",
+      "https://www.vakifkatilim.com.tr/plugins/CaptchaImage?random=84d5e54a-7ce3-460c-b820-1ad5c69a331f&rnd=" +
+        i
+    );
+  });
+};
+
+VK.formValidation = function () {
+  const forms = $(".form");
+
+  // FORM ON SUBMIT
+  Array.prototype.slice.call(forms).forEach(function (form) {
+    form.addEventListener(
+      "submit",
+      function (e) {
+        // Reference Number
+        const referenceNumber = $(".input-reference-number");
+        let isvalidReferenceNumber;
+        if (
+          $(referenceNumber).length >= 1 &&
+          referenceNumber.val().length != 16
+        ) {
+          e.preventDefault();
+          isvalidReferenceNumber = false;
+        } else {
+          isvalidReferenceNumber = true;
+        }
+
+        // TCKN
+        const tckn = $(".input-tckn");
+        let isvalidTC = true;
+        if ($(tckn).length >= 1) isvalidTC = VK.tcknValidation(tckn.val());
+
+        // VKN
+        const vkn = $(".input-tax-no");
+        let isvalidvkn = true;
+        if ($(vkn).length >= 1) isvalidvkn = VK.vknValidation(vkn.val());
+
+        // Email
+        const email = $(".input-email");
+        let isvalidEmail = true;
+        if ($(email).length >= 1)
+          isvalidEmail = VK.emailValidation(email.val());
+
+        // Phone
+        const phone = $(".input-tel");
+        let isvalidPhone = true;
+        if ($(phone).length >= 1)
+          isvalidPhone = VK.validPhoneNumber(phone.val());
+
+        // Advance-Payment
+        const advancePayment = $("#advance-payment");
+        const price = $("#price");
+        let isvalidAdvancePayment = true;
+        if ($(advancePayment).length >= 1)
+          isvalidAdvancePayment = VK.validAdvancePayment(
+            advancePayment.val(),
+            price.val()
+          );
+
+        // price
+        let isValidPrice = true;
+        if ($(price).length >= 1) isValidPrice = VK.validPrice(price.val());
+
+        if (
+          !form.checkValidity() ||
+          !isvalidPhone ||
+          !isvalidEmail ||
+          !isvalidvkn ||
+          !isvalidTC ||
+          !isvalidReferenceNumber ||
+          !isvalidAdvancePayment ||
+          !isValidPrice
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          isvalidTC
+            ? $(tckn).removeClass("is-invalid")
+            : $(tckn).addClass("is-invalid");
+          isvalidvkn
+            ? $(vkn).removeClass("is-invalid")
+            : $(vkn).addClass("is-invalid");
+          isvalidEmail
+            ? $(email).removeClass("is-invalid")
+            : $(email).addClass("is-invalid");
+          isvalidPhone
+            ? $(phone).removeClass("is-invalid")
+            : $(phone).addClass("is-invalid");
+          isValidPrice
+            ? $(price).removeClass("is-invalid")
+            : $(price).addClass("is-invalid");
+          isvalidAdvancePayment
+            ? $(advancePayment).removeClass("is-invalid")
+            : $(advancePayment).addClass("is-invalid");
+        } else {
+          $(":submit").attr("disabled", true);
+        }
+
+        form.classList.add("was-validated");
+      },
+      false
+    );
+  });
+};
+
+VK.formValidation();
+
+// TEXTAREA COUNTER
+VK.textareaCount = function (e) {
+  const textarea = document.querySelector("textarea"),
+    counter = document.getElementById("character-counter");
+
+  $(counter).html("0 " + "/ 500");
+
+  $(textarea).keyup(function () {
+    const textlength = $(this).val().length;
+    $(counter).text(textlength + " / 500");
+    if (textlength === 500) {
+      $(counter).addClass("is-full");
+    } else {
+      $(counter).removeClass("is-full");
+    }
+  });
+};
+
+VK.textareaCount();
+
+VK.player = function () {
+  const button = $(".button-player"),
+    audio = document.getElementById("audio");
+  if (!$(audio).length) {
+    return;
+  }
+  button.on("click", function () {
+    if ($(this).hasClass("playing")) {
+      $(this).removeClass("playing");
+      $(audio)[0].pause();
+    } else {
+      button.removeClass("playing");
+      $(this).addClass("playing");
+      $(audio).attr("src", $(this).attr("sound-url"));
+      $(audio)[0].play();
+    }
+  });
+};
+
+VK.player();
+
+VK.pushAjaxUrl = function (properties) {
+  let pushUrl = "";
+
+  for (let x = 0; x < Object.keys(properties).length; x++) {
+    if (
+      Object.keys(properties)[x] != "pageItemSize" &&
+      Object.keys(properties)[x] != "updated" &&
+      Object.values(properties)[x] !== ""
+    ) {
+      pushUrl =
+        pushUrl +
+        "&" +
+        Object.keys(properties)[x] +
+        "=" +
+        Object.values(properties)[x];
+    }
+  }
+  let encodePushUrl = `?${pushUrl}`;
+  encodePushUrl = encodePushUrl.replace("?&", "?");
+
+  window.history.pushState("", "", `${encodePushUrl}`);
+  window.scrollTo(0, 0);
+};
+
+VK.paginationPage = function (dataUrl, method, template, props) {
+  const pagination = $(".pagination");
+  if (VK.pageHasItem("#realestate-filter")) {
+    const realestateSelectCity = $(
+      "#realestate-filter #select-realestate-city"
+    );
+    const realestateSelectDistrict = $(
+      "#realestate-filter #select-realestate-district"
+    );
+    const realestateSelectType = $("#realestate-type-select");
+    const realestateInputMin = $("#realestate-min-price-input");
+    const realestateInputMax = $("#realestate-max-price-input");
+
+    if (
+      realestateSelectCity.val() !== "0" &&
+      realestateSelectCity.val() !== "" &&
+      realestateSelectCity.val() !== null
+    ) {
+      props.cityId = realestateSelectCity.val();
+    }
+
+    if (
+      realestateSelectDistrict.val() !== "0" &&
+      realestateSelectDistrict.val() !== "" &&
+      realestateSelectDistrict.val() !== null
+    ) {
+      props.districtId = realestateSelectDistrict.val();
+    }
+
+    if (
+      realestateSelectType.val() !== "0" &&
+      realestateSelectType.val() !== "" &&
+      realestateSelectType.val() !== null
+    ) {
+      props.type = realestateSelectType.val();
+    }
+
+    if (realestateInputMin.val() !== "0" && realestateInputMin.val() !== "") {
+      props.minPrice = realestateInputMin.val();
+    }
+
+    if (realestateInputMax.val() !== "0" && realestateInputMax.val() !== "") {
+      props.maxPrice = realestateInputMax.val();
+    }
+  }
+  let urlParams = new URLSearchParams(window.location.search);
+
+  let pageNumber = 1;
+
+  let totalPage = 1;
+
+  let callPropsUrl = "";
+
+  if (urlParams.has("page") && !props.updated) {
+    pageNumber = Number(urlParams.get("page"));
+    props.page = pageNumber;
+  }
+
+  if (urlParams.has("yearId") && !props.updated)
+    props.yearId = Number(urlParams.get("yearId"));
+
+  if (props["yearId"])
+    props.yearId =
+      props.yearId === "0" || props.yearId === "" ? "" : props.yearId;
+
+  for (let x = 0; x < Object.keys(props).length; x++) {
+    if (Object.keys(props)[x] !== "updated") {
+      callPropsUrl =
+        callPropsUrl +
+        "&" +
+        Object.keys(props)[x] +
+        "=" +
+        Object.values(props)[x];
+    }
+  }
+
+  $.ajax({
+    url: `${dataUrl}?langId=${langId}&language=${language}${callPropsUrl}`,
+    type: method,
+    success: function (result) {
+      pageNumber = result.currentPageNumber;
+      totalPage = result.totalPageCount;
+
+      // SONUÇ VAR/YOK BİLGİLENDİRME MESAJI
+      let totalItem = result.items.length;
+      if (totalItem >= 1) {
+        $("#result-message").addClass("d-none");
+        $(pagination).removeClass("d-none");
+      } else {
+        $("#result-message").removeClass("d-none");
+        $(pagination).addClass("d-none");
+      }
+
+      // SAYFAYA ITEMLARIN BASILMASI
+      $(PAGINATION_PAGE).html("");
+      for (let i = 0; i < result.items.length; i++) {
+        template(result.items[i]);
+      }
+      // --
+
+      // GELEN JSON'A GÖRE PAGINATION SAYFA SAYISI BASILIYOR VE HANGİ SAYFADA İSE ONU SEÇİLİ YAPIYOR
+      PAGINATION_SELECT.html("");
+      for (let i = 0; i < result.totalPageCount; i++) {
+        PAGINATION_SELECT.append(`<option value="${i + 1}" >${i + 1}</option>`);
+      }
+      if (result.totalPageCount <= 1) {
+        $(".pagination").addClass("d-none");
+      }
+      PAGINATION_SELECT.find("option")
+        .eq(pageNumber - 1)
+        .attr("selected", "selected");
+      // --
+
+      // GELEN JSON'A GÖRE KATEGORİLER BASILIYOR VE HANGİ KATEGORİ İSE ONU SEÇİLİ YAPIYOR
+      if (
+          VK.pageHasItem("#category-select") &&
+          result.categoryId != undefined
+      ) {
+        CATEGORY_SELECT.html("");
+        CATEGORY_SELECT.append(
+          `<option value="">${result.categories.title}</option>`
+        );
+        for (let i = 0; i < result.categories.options.length; i++) {
+          CATEGORY_SELECT.append(
+            `<option value="${result.categories.options[i].id}" >${result.categories.options[i].name}</option>`
+          );
+        }
+        CATEGORY_SELECT.find(`option[value="${result.categoryId}"]`).attr(
+          "selected",
+          "selected"
+        );
+      }
+      // --
+
+      // GELEN JSON'A GÖRE YILLAR BASILIYOR VE HANGİ YIL İSE ONU SEÇİLİ YAPIYOR
+      if (VK.pageHasItem("#year-select") && result.yearId != undefined) {
+        YEAR_SELECT.html("");
+        YEAR_SELECT.append(`<option value="">${result.years.title}</option>`);
+        for (let i = 0; i < result.years.options.length; i++) {
+          YEAR_SELECT.append(
+            `<option value="${result.years.options[i].id}" >${result.years.options[i].name}</option>`
+          );
+        }
+        YEAR_SELECT.find(`option[value="${result.yearId}"]`).attr(
+          "selected",
+          "selected"
+        );
+      }
+      // --
+
+      // PAGINATION SAĞ SOL OKLARININ DURUMA GÖRE GÖSTERİLİP SAKLANMASI
+      if (totalPage > pageNumber) {
+        PAGINATION_NEXT_BUTTON.removeClass("hidden");
+      } else {
+        PAGINATION_NEXT_BUTTON.addClass("hidden");
+      }
+      if (pageNumber > 1) {
+        PAGINATION_PREV_BUTTON.removeClass("hidden");
+      } else {
+        PAGINATION_PREV_BUTTON.addClass("hidden");
+      }
+      // --
+
+      VK.lazyLoadImages();
+      if (VK.pageHasItem(".counter")) {
+        VK.counter();
+      }
+    },
+  });
+};
+
+if (VK.pageHasItem("#pagination-page")) {
+  VK.paginationPage(pageDataUrl, pageDataMethod, itemTemplate, pageProps);
+  $(window).on("popstate", function () {
+    window.location = location.href;
+  });
+}
+
+VK.selectFilter = function (element, key) {
+  element.on("change", function () {
+    pageProps[key] = $(this).val();
+    pageProps["updated"] = true;
+    if (key === "yearId") {
+      pageProps.page = 1;
+    }
+    VK.paginationPage(pageDataUrl, pageDataMethod, itemTemplate, pageProps);
+
+    window.scrollTo(0, 0);
+  });
+};
+VK.selectFilter(CATEGORY_SELECT, "categoryId");
+VK.selectFilter(YEAR_SELECT, "yearId");
+VK.selectFilter(PAGINATION_SELECT, "page");
+
+VK.checkFilter = function (element, key) {
+  $(element).on("click", function () {
+    pageProps[key] = element.checked;
+    VK.paginationPage(pageDataUrl, pageDataMethod, itemTemplate, pageProps);
+    VK.pushAjaxUrl(pageProps);
+  });
+};
+
+const kendimIcinCheckbox = document.getElementById("kendim-icin-checkbox");
+const isimIcinCheckbox = document.getElementById("isim-icin-checkbox");
+
+if (VK.pageHasItem("#kendim-icin-checkbox")) {
+  VK.checkFilter(kendimIcinCheckbox, "kendimIcin");
+}
+if (VK.pageHasItem("#isim-icin-checkbox")) {
+  VK.checkFilter(isimIcinCheckbox, "isimIcin");
+}
+
+VK.nextPage = function (dataUrl, method, template, props) {
+  PAGINATION_NEXT_BUTTON.on("click", function () {
+    pageProps.page = Number(PAGINATION_SELECT.val()) + 1;
+    pageProps.updated = true;
+    PAGINATION_SELECT.val(pageProps.page);
+    VK.paginationPage(dataUrl, method, template, props);
+    VK.pushAjaxUrl(props);
+    window.scrollTo(0, 0);
+  });
+};
+if (VK.pageHasItem("#pagination-button-next")) {
+  VK.nextPage(pageDataUrl, pageDataMethod, itemTemplate, pageProps);
+}
+
+VK.prevPage = function (dataUrl, method, template, props) {
+  PAGINATION_PREV_BUTTON.on("click", function () {
+    pageProps.page = Number(PAGINATION_SELECT.val()) - 1;
+    pageProps.updated = true;
+    PAGINATION_SELECT.val(pageProps.page);
+    VK.paginationPage(dataUrl, method, template, props);
+    VK.pushAjaxUrl(props);
+    window.scrollTo(0, 0);
+  });
+};
+if (VK.pageHasItem("#pagination-button-prev")) {
+  VK.prevPage(pageDataUrl, pageDataMethod, itemTemplate, pageProps);
+}
+
+VK.notification = function () {
+  var listCountInPage = $(".notifications-list").length;
+  let readedStr = localStorage.getItem("notification-readed");
+  let arrReaded = [];
+  if (readedStr !== null) {
+    arrReaded = JSON.parse(readedStr);
+    arrReaded.forEach((item) => {
+      $(".notification-unread[href='" + item + "'").removeClass(
+        "notification-unread"
+      );
+    });
+  }
+  const counter = $(".notification-count");
+  const unreadedItem = $(".notification-unread");
+  const unreadedItemCount = unreadedItem.length / listCountInPage;
+  $(counter).text(unreadedItemCount);
+  if (unreadedItemCount > 0) {
+    $(counter).text(unreadedItemCount);
+  } else {
+    $(counter).remove();
+  }
+  // const counter = $(".notification-count");
+  // let count;
+
+  const notificationList = $(".notifications-list");
+  // // Total Notifications
+  // count = notificationList.find(".notification-unread").length;
+  // $(counter).text(count);
+
+  // Reading Notificaitons
+  $(".notifications-list a").on("click", function (e) {
+    let x = e.target;
+    var xHref = $(x).attr("href");
+    $(".notification-unread[href='" + xHref + "'").removeClass(
+      "notification-unread"
+    );
+    arrReaded.push(xHref);
+    localStorage.setItem("notification-readed", JSON.stringify(arrReaded));
+    let count =
+      notificationList.find(".notification-unread").length / listCountInPage;
+    $(counter).text(count);
+    if (count <= 0) $(counter).addClass("hidden");
+  });
+};
+VK.notification();
