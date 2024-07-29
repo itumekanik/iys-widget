@@ -183,7 +183,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     const fetchCaptcha = () => {
-        return fetch('http://localhost:3000/captcha/generate', {
+        return fetch('https://public.vkk.io/api/v1/captcha/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -248,7 +248,7 @@ document.addEventListener("DOMContentLoaded", function () {
             "iysCode": 630157
         };
 
-        return fetch('http://localhost:3000/via-widget/start-consent', {
+        return fetch('https://public.vkk.io/api/v1/via-widget/start-consent', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", function () {
             "iysCode": 630157
         };
 
-        fetch('http://localhost:3000/via-widget/confirmation', {
+        fetch('https://public.vkk.io/api/v1/via-widget/confirmation', {
             method: 'POST',
             headers: {
                 'content-type': 'application/json'
