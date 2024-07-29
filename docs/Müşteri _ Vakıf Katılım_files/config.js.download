@@ -1,0 +1,136 @@
+window.CONFIG = {};
+
+CONFIG.calculate = {
+    financing: {
+        url: "/plugins/FinancingComputationExecute",
+        method: "POST",
+    },
+    paymentPlan: {
+        url: "/plugins/InstallmentPayBack",
+        method: "POST",
+    },
+    financingInstallment: {
+        url: "/plugins/FinancingInstallment",
+        method: "POST",
+    },
+    dividend: {
+        url: "/plugins/GrossAmountCalculationJson",
+        method: "POST",
+    },
+    moneyExpiry: {
+        url: "/plugins/MoneyExpiry",
+        method: "POST",
+    },
+    currencyProtected: {
+        url: "/plugins/CurrencyProtectedAccountCalculation",
+        method: "GET",
+    },
+    iban: {
+        url: "assets/mock-data/iban.json",
+        method: "GET",
+    },
+    currencyConverter: {
+        url: "/plugins/CurrencyConverter",
+        method: "GET",
+    },
+    creditCard: {
+        url: "/plugins/CreditCardInstallmentComputationJson",
+        method: "GET",
+    },
+    creditCardPaymentPlan: {
+        url: "assets/mock-data/kredi-karti-taksit-payment-plan.json",
+        method: "GET",
+    },
+    currency: {
+        url: "/plugins/DetailCurrencyListData",
+        method: "GET",
+    },
+    expiry: {
+        url: "/plugins/CurrencyProtectedAccountInstallment",
+        method: "GET",
+    },
+};
+
+CONFIG.rates = {
+    homeExchangeRates: {
+        url: "/plugins/HomePageCurrencyData",
+        method: "GET",
+    },
+    dividendRates: {
+        url: "/plugins/HomepageProfitShareTable",
+        method: "GET",
+    },
+};
+
+CONFIG.pages = {
+    news: {
+        url: "/plugins/NewsListJson",
+        method: "GET",
+    },
+    campaigns: {
+        url: "/plugins/CampaignListJson",
+        method: "GET",
+    },
+    announcements: {
+        url: "/plugins/AnnouncementListJson",
+        method: "GET",
+    },
+    awards: {
+        url: "/plugins/AwardsListJson",
+        method: "GET",
+    },
+    ads: {
+        url: "/plugins/AdsListJson",
+        method: "GET",
+    },
+    blog: {
+        url: "/plugins/BlogListJson",
+        method: "GET",
+    },
+    realEstate: {
+        url: "/plugins/RealEstateListJson",
+        method: "GET",
+    },
+};
+
+CONFIG.realEstate = {
+    district: {
+        url: "/plugins/DistrictListJson",
+        method: "GET",
+    },
+};
+
+CONFIG.locations = {
+    cities: {
+        url: "/plugins/NeedSupportBranchCities",
+        method: "GET",
+    },
+    district: {
+        url: "/plugins/NeedSupportBranchDistricts",
+        method: "GET",
+    },
+    branch: {
+        url: "/plugins/NeedSupportBranchInformations",
+        method: "GET",
+    },
+}
+
+CONFIG.map = {
+    city: {
+        url: "/plugins/NeedSupportBranchCities",
+        method: "GET",
+    },
+    district: {
+        url: "/plugins/NeedSupportBranchDistricts",
+        method: "GET",
+    },
+    mapInformations: {
+        url: "/plugins/Informations",
+        method: "GET",
+    },
+};
+
+CONFIG.pageOptions = {
+    size: 9,
+    startPage: 1,
+};
